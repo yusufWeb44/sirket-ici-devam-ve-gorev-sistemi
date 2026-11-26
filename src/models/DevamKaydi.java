@@ -2,8 +2,11 @@
 package models;
 
 import enums.DevamDurumu;
+import services.KonumServisi;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 public class DevamKaydi {
     private int kayitId;
@@ -137,19 +140,118 @@ public class DevamKaydi {
     }
 
     public void girisKaydet(LocalDateTime zaman, KonumBilgisi konum, SistemAyarlari ayarlar) {
-        // TODO: Implement business logic
+        if (this.girisZamani != null) {
+            System.out.println("RED (IK-05): Bugun icin zaten ise giris kaydi bulunmaktadir!");
+            return;
+        }
+
+        if (zaman == null) {
+            System.out.println("RED (IK-04): Giris zamani bos (null) olamaz!");
+            return;
+        }
+
+        if (ayarlar == null) {
+            System.out.println("RED (IK-03): Sistem ayarlari bulunamadi!");
+            return;
+        }
+
+        if (!KonumServisi.konumDogrula(konum, ayarlar)) {
+            System.out.println("RED (IK-03): Konum dogrulamasi basarisiz, ise giris kaydi olusturulmadi!");
+            return;
+        }
+
+        this.girisZamani = zaman;
+        this.tarih = zaman.toLocalDate();
+        this.girisKonumu = konum;
+        durumuVePuanlariHesapla(ayarlar);
+        System.out.println("BASARILI (IK-03/IK-04/IK-05): Ise giris kaydedildi -> Tarih: " + this.tarih
+                + ", Saat: " + this.girisZamani.toLocalTime() + ", Durum: " + this.durum);
     }
 
     public boolean cikisKaydet(LocalDateTime zaman, KonumBilgisi konum) {
-        // TODO: Implement business logic
-        return false;
+        if (this.girisZamani == null) {
+            System.out.println("RED (IK-05): Giris kaydi olmadan cikis yapilamaz!");
+            return false;
+        }
+
+        if (this.cikisZamani != null) {
+            System.out.println("RED (IK-05): Bugun icin zaten cikis kaydi olusturulmus!");
+            return false;
+        }
+
+        if (zaman == null) {
+            System.out.println("RED (IK-04): Cikis zamani bos (null) olamaz!");
+            return false;
+        }
+
+        if (zaman.isBefore(this.girisZamani)) {
+            System.out.println("RED (IK-04): Cikis zamani giris zamanindan once olamaz!");
+            return false;
+        }
+
+        if (konum == null || !konum.gecerliKoordinatMi()) {
+            System.out.println("RED (IK-03): Cikis konum bilgisi gecersiz!");
+            return false;
+        }
+
+        this.cikisZamani = zaman;
+        this.cikisKonumu = konum;
+        System.out.println("BASARILI (IK-05): Ise cikis kaydedildi -> Saat: " + this.cikisZamani.toLocalTime());
+        return true;
     }
 
     public void durumuVePuanlariHesapla(SistemAyarlari ayarlar) {
-        // TODO: Implement business logic
+        if (this.girisZamani == null) {
+            return;
+        }
+        if (ayarlar == null || ayarlar.getMesaiBaslangic() == null) {
+            System.out.println("RED (IK-13): Mesai baslangic saati tanimli degil!");
+            return;
+        }
+
+        LocalTime mesaiBaslangic = ayarlar.getMesaiBaslangic();
+        LocalTime girisSaati = this.girisZamani.toLocalTime();
+
+        // Pozitif deger: gec kalinan dakika; negatif deger: erken gelinen dakika
+        long farkDakika = Duration.between(mesaiBaslangic, girisSaati).toMinutes();
+
+        this.adayYesilPuan = 0;
+        this.kirmiziPuan = 0;
+
+        int erkenEsik = ayarlar.getYesilPuanEsikDakika() > 0 ? ayarlar.getYesilPuanEsikDakika() : 60;
+        int kirmiziAlt = ayarlar.getKirmiziPuanAltDakika() > 0 ? ayarlar.getKirmiziPuanAltDakika() : 60;
+        int asiriGecEsik = ayarlar.getAsiriGecEsikDakika() > 0 ? ayarlar.getAsiriGecEsikDakika() : 120;
+
+        if (farkDakika <= -erkenEsik) {
+            this.durum = DevamDurumu.ERKEN;
+            this.adayYesilPuan = 1;
+            if (this.erkenGirisOnaylandiMi) {
+                this.kesinlesenYesilPuan = 1;
+            }
+        } else if (farkDakika < kirmiziAlt) {
+            this.durum = (farkDakika <= 0) ? DevamDurumu.ZAMANINDA : DevamDurumu.GEC;
+        } else if (farkDakika < asiriGecEsik) {
+            this.durum = DevamDurumu.GEC;
+            this.kirmiziPuan = 1;
+        } else {
+            this.durum = DevamDurumu.ASIRI_GEC;
+        }
     }
 
+    
     public void devamsizOlarakIsaretle(LocalDate tarih) {
-        // TODO: Implement business logic
+        if (tarih == null) {
+            System.out.println("RED (IK-06): Devamsizlik isaretlemesi icin tarih bos olamaz!");
+            return;
+        }
+        if (this.girisZamani != null) {
+            System.out.println("RED (IK-06): Gecerli giris kaydi bulunan gun DEVAMSIZ yapilamaz!");
+            return;
+        }
+        this.tarih = tarih;
+        this.durum = DevamDurumu.DEVAMSIZ;
+        this.adayYesilPuan = 0;
+        this.kesinlesenYesilPuan = 0;
+        System.out.println("KAYIT (IK-06): " + tarih + " tarihi icin durum DEVAMSIZ olarak isaretlendi.");
     }
 }

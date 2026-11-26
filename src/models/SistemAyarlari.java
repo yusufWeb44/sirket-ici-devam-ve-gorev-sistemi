@@ -4,6 +4,7 @@ package models;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -162,12 +163,28 @@ public class SistemAyarlari {
     }
 
     public boolean calismaGunuMu(LocalDate tarih) {
-        // TODO: Implement business logic
-        return false;
+        if (tarih == null) {
+            System.out.println("RED (IK-06): Tarih degeri bos (null) olamaz!");
+            return false;
+        }
+        if (calismaGunleri == null || calismaGunleri.isEmpty()) {
+            System.out.println("RED (IK-06): Calisma gunleri tanimlanmamis!");
+            return false;
+        }
+        boolean aktifGun = calismaGunleri.contains(tarih.getDayOfWeek());
+        if (!aktifGun) {
+            System.out.println("RED (IK-06): " + tarih + " (" + tarih.getDayOfWeek() + ") calisma gunu degildir!");
+        }
+        return aktifGun;
     }
 
     public ZonedDateTime sunucuZamaniGetir() {
-        // TODO: Implement business logic
-        return null;
+        String bolge = (zamanDilimi == null || zamanDilimi.isBlank()) ? "Europe/Istanbul" : zamanDilimi.trim();
+        try {
+            return ZonedDateTime.now(ZoneId.of(bolge));
+        } catch (Exception e) {
+            System.out.println("RED (IK-04): Gecersiz zaman dilimi (" + bolge + "), Europe/Istanbul kullaniliyor!");
+            return ZonedDateTime.now(ZoneId.of("Europe/Istanbul"));
+        }
     }
 }

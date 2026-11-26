@@ -9,8 +9,10 @@ import enums.DuzeltmeTuru;
 import enums.GorevDurumu;
 import enums.IzinTuru;
 import enums.Rol;
+import services.KonumServisi;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -123,20 +125,121 @@ public class Calisan extends Kullanici {
     }
 
     // Ahmad Alamin - 230404933
+    // IK-01 & IK-03 & IK-04 & IK-05: Aktif hesap kontrolu, konum dogrulama ve gunluk tek giris kaydi
     public DevamKaydi iseGirisYap(KonumBilgisi konum, SistemAyarlari ayarlar) {
-        // TODO: Implement business logic
+        // IK-01: Hesap aktiflik kontrolu
+        if (!isAktifMi()) {
+            System.out.println("RED (IK-01): Pasif hesap ise giris yapamaz!");
+            return null;
+        }
+
+        if (ayarlar == null) {
+            System.out.println("RED (IK-03): Sistem ayarlari bulunamadi!");
+            return null;
+        }
+
+        // IK-04: Sunucu zaman dilimine gore zaman alimi
+        ZonedDateTime sunucuZamani = ayarlar.sunucuZamaniGetir();
+        LocalDate bugun = sunucuZamani.toLocalDate();
+
+        // IK-05: Ayni gun icin zaten giris kaydi var mi kontrolu
+        if (gunlukGirisKontrolu(bugun)) {
+            System.out.println("RED (IK-05): Bugun (" + bugun + ") icin zaten giris kaydi bulunmaktadir!");
+            return null;
+        }
+
+        // IK-03: Konum ve dogruluk siniri kontrolu
+        if (!KonumServisi.konumDogrula(konum, ayarlar)) {
+            System.out.println("RED (IK-03): Konum dogrulamasi basarisiz, ise giris reddedildi!");
+            return null;
+        }
+
+        if (this.devamKayitlari == null) {
+            this.devamKayitlari = new ArrayList<>();
+        }
+
+        DevamKaydi yeniKayit = new DevamKaydi();
+        yeniKayit.setKayitId(this.devamKayitlari.size() + 1);
+        yeniKayit.setCalisanId(getKullaniciId());
+        yeniKayit.girisKaydet(sunucuZamani.toLocalDateTime(), konum, ayarlar);
+
+        if (yeniKayit.getGirisZamani() != null) {
+            this.devamKayitlari.add(yeniKayit);
+            return yeniKayit;
+        }
+
         return null;
     }
 
     // Ahmad Alamin - 230404933
+    // IK-01 & IK-03 & IK-04 & IK-05: Aktif giris kaydi varsa konum ve sunucu zamani ile cikis kaydeder
     public DevamKaydi iseCikisYap(KonumBilgisi konum, SistemAyarlari ayarlar) {
-        // TODO: Implement business logic
-        return null;
+        // IK-01: Hesap aktiflik kontrolu
+        if (!isAktifMi()) {
+            System.out.println("RED (IK-01): Pasif hesap ise cikis yapamaz!");
+            return null;
+        }
+
+        if (ayarlar == null) {
+            System.out.println("RED (IK-03): Sistem ayarlari bulunamadi!");
+            return null;
+        }
+
+        // IK-04: Sunucu zaman dilimine gore zaman alimi
+        ZonedDateTime sunucuZamani = ayarlar.sunucuZamaniGetir();
+        LocalDate bugun = sunucuZamani.toLocalDate();
+
+        if (this.devamKayitlari == null || this.devamKayitlari.isEmpty()) {
+            System.out.println("RED (IK-05): Bugun icin giris kaydi bulunamadan cikis yapilamaz!");
+            return null;
+        }
+
+        // Bugune ait giris kaydini bul
+        DevamKaydi bugunkuKayit = null;
+        for (DevamKaydi kayit : this.devamKayitlari) {
+            if (kayit != null && bugun.equals(kayit.getTarih()) && kayit.getGirisZamani() != null) {
+                bugunkuKayit = kayit;
+                break;
+            }
+        }
+
+        // IK-05: Giris kaydi olmadan cikis engeli
+        if (bugunkuKayit == null) {
+            System.out.println("RED (IK-05): " + bugun + " tarihi icin aktif giris kaydi bulunamadi!");
+            return null;
+        }
+
+        // IK-05: Ayni gun ikinci cikis engeli
+        if (bugunkuKayit.getCikisZamani() != null) {
+            System.out.println("RED (IK-05): Bugun icin zaten cikis kaydi olusturulmus!");
+            return null;
+        }
+
+        // IK-03: Konum ve dogruluk siniri kontrolu
+        if (!KonumServisi.konumDogrula(konum, ayarlar)) {
+            System.out.println("RED (IK-03): Cikis konum dogrulamasi basarisiz!");
+            return null;
+        }
+
+        boolean cikisBasarili = bugunkuKayit.cikisKaydet(sunucuZamani.toLocalDateTime(), konum);
+        return cikisBasarili ? bugunkuKayit : null;
     }
 
     // Ahmad Alamin - 230404933
+    // IK-05: Verilen tarihte calisana ait giris kaydi bulunup bulunmadigini kontrol eder
     public boolean gunlukGirisKontrolu(LocalDate tarih) {
-        // TODO: Implement business logic
+        if (tarih == null) {
+            System.out.println("RED (IK-05): Gunluk giris kontrolu icin tarih bos olamaz!");
+            return false;
+        }
+        if (this.devamKayitlari == null || this.devamKayitlari.isEmpty()) {
+            return false;
+        }
+        for (DevamKaydi kayit : this.devamKayitlari) {
+            if (kayit != null && tarih.equals(kayit.getTarih()) && kayit.getGirisZamani() != null) {
+                return true;
+            }
+        }
         return false;
     }
 

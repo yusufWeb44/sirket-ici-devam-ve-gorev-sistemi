@@ -51,8 +51,21 @@ public class KonumBilgisi {
         this.olcumZamani = olcumZamani;
     }
 
+    // Ahmad Alamin - 230404933
+    // IK-03: Koordinat, dogruluk payi ve olcum zamani gecerlilik kontrolu
     public boolean gecerliKoordinatMi() {
-        // TODO: Implement business logic
-        return false;
+        if (Double.isNaN(enlem) || Double.isInfinite(enlem) || enlem < -90.0 || enlem > 90.0) {
+            return false;
+        }
+        if (Double.isNaN(boylam) || Double.isInfinite(boylam) || boylam < -180.0 || boylam > 180.0) {
+            return false;
+        }
+        if (Double.isNaN(dogrulukPayi) || Double.isInfinite(dogrulukPayi) || dogrulukPayi < 0.0) {
+            return false;
+        }
+        if (olcumZamani == null) {
+            return false;
+        }
+        return true;
     }
 }
