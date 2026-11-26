@@ -1,4 +1,8 @@
-// Youssef AYOUBI - 230404906
+// Ortak Sınıf - Görev Dağılımı:
+// - Youssef AYOUBI - 230404906 (Sınıf yapısı ve gorevDurumuGuncelle)
+// - Ahmad Alamin - 230404933 (iseGirisYap, iseCikisYap, gunlukGirisKontrolu)
+// - Adnan Derviş - 230404935 (izinTalebiOlustur, izinCakismasiVarMi, izinTalebiIptalEt)
+// - Mohamad BIRAHJAKLI - 230404939 (devamDuzeltmeTalebiOlustur, kendiRaporunuGoruntule)
 package models;
 
 import enums.DuzeltmeTuru;
@@ -156,8 +160,45 @@ public class Calisan extends Kullanici {
 
     // Youssef AYOUBI - 230404906
     public boolean gorevDurumuGuncelle(int gorevId, GorevDurumu yeniDurum, String aciklama) {
-        // TODO: Implement business logic
-        return false;
+        // IK-01: Oturum açmamış veya pasif çalışan işlem yapamaz.
+        if (!this.aktifMi || !this.oturumAcikMi) {
+            System.out.println("HATA (IK-01): Görev durumu güncellemek için aktif hesap ve açık oturum gereklidir.");
+            return false;
+        }
+
+        // IK-12: Çalışan görevi doğrudan TAMAMLANDI yapamaz; inceleme onayı gerekir.
+        if (yeniDurum == GorevDurumu.TAMAMLANDI) {
+            System.out.println("HATA (IK-12): Yetkisiz İşlem! Çalışan görevi doğrudan TAMAMLANDI yapamaz, incelemeye göndermelidir.");
+            return false;
+        }
+
+        // İlgili görevi çalışanın atanan görevleri arasında bulma
+        Gorev hedefGorev = null;
+        for (Gorev g : this.atananGorevler) {
+            if (g.getGorevId() == gorevId) {
+                hedefGorev = g;
+                break;
+            }
+        }
+
+        if (hedefGorev == null) {
+            System.out.println("HATA (IK-02): Bu görev (ID: " + gorevId + ") size atanmamış veya bulunamadı.");
+            return false;
+        }
+
+        // IK-12: Atanan çalışan görevi DEVAM_EDIYOR veya INCELEME_BEKLIYOR durumlarına taşır.
+        boolean guncellendi = hedefGorev.durumaGecis(yeniDurum, this.kullaniciId, aciklama);
+        if (guncellendi && yeniDurum == GorevDurumu.INCELEME_BEKLIYOR) {
+            Bildirim.bildirimGonder(
+                    hedefGorev.getIncelemeSorumlusuId(),
+                    "Görev İnceleme Bekliyor",
+                    this.ad + " " + this.soyad + " '" + hedefGorev.getBaslik() + "' görevini incelemeye gönderdi.",
+                    enums.BildirimTuru.GOREV_INCELEME,
+                    hedefGorev.getGorevId()
+            );
+            System.out.println("BAŞARILI (IK-12): Görev inceleme için sorumluya iletildi ve bildirim oluşturuldu.");
+        }
+        return guncellendi;
     }
 
     // Mohamad BIRAHJAKLI - 230404939

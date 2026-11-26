@@ -3,6 +3,7 @@ package models;
 
 import enums.Rol;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 public abstract class Kullanici {
     protected int kullaniciId;
@@ -16,8 +17,10 @@ public abstract class Kullanici {
     protected boolean aktifMi;
     protected LocalDateTime olusturmaTarihi;
     protected LocalDateTime sonGirisTarihi;
+    protected boolean oturumAcikMi;
 
     public Kullanici() {
+        this.oturumAcikMi = false;
     }
 
     public Kullanici(int kullaniciId, String kullaniciAdi, String sifreHash, String ad, String soyad,
@@ -34,6 +37,7 @@ public abstract class Kullanici {
         this.aktifMi = aktifMi;
         this.olusturmaTarihi = olusturmaTarihi;
         this.sonGirisTarihi = sonGirisTarihi;
+        this.oturumAcikMi = false;
     }
 
     public int getKullaniciId() {
@@ -124,26 +128,70 @@ public abstract class Kullanici {
         this.sonGirisTarihi = sonGirisTarihi;
     }
 
-    // IK-01
+    public boolean isOturumAcikMi() {
+        return oturumAcikMi;
+    }
+
+    public void setOturumAcikMi(boolean oturumAcikMi) {
+        this.oturumAcikMi = oturumAcikMi;
+    }
+
     public boolean girisYap(String kullaniciAdi, String sifre) {
-        // TODO: Implement business logic
-        return false;
+        // IK-01: Pasife alınmış hesaplar sisteme giriş yapamaz.
+        if (!this.aktifMi) {
+            System.out.println("HATA (IK-01): Hesap pasif durumda olduğu için giriş reddedildi! Kullanıcı: " + this.kullaniciAdi);
+            return false;
+        }
+
+        // IK-01: Kullanıcı, geçerli kullanıcı adı ve şifreyle oturum açmadan işlem yapamaz.
+        if (kullaniciAdi == null || sifre == null ||
+                !this.kullaniciAdi.equals(kullaniciAdi) || !this.sifreHash.equals(sifre)) {
+            System.out.println("HATA (IK-01): Hatalı kullanıcı adı veya şifre! Giriş reddedildi.");
+            return false;
+        }
+
+        // IK-04: Sunucu zamanı (Europe/Istanbul) kullanılır.
+        this.sonGirisTarihi = LocalDateTime.now(ZoneId.of("Europe/Istanbul"));
+        this.oturumAcikMi = true;
+        System.out.println("BAŞARILI (IK-01): Oturum açıldı -> " + this.ad + " " + this.soyad + " (" + this.rol + ")");
+        return true;
     }
 
-    // IK-01
     public void cikisYap() {
-        // TODO: Implement business logic
+        // IK-01: Oturum sonlandırma
+        this.oturumAcikMi = false;
+        System.out.println("BAŞARILI: Oturum kapatıldı -> " + this.ad + " " + this.soyad);
     }
 
-    // IK-02
     public boolean sifreGuncelle(String eskiSifre, String yeniSifre) {
-        // TODO: Implement business logic
-        return false;
+        // IK-01 & IK-02: Oturum ve hesap aktiflik kontrolü
+        if (!this.aktifMi || !this.oturumAcikMi) {
+            System.out.println("HATA (IK-01): Şifre güncellemek için aktif hesap ve açık oturum gereklidir.");
+            return false;
+        }
+        if (eskiSifre == null || !this.sifreHash.equals(eskiSifre)) {
+            System.out.println("HATA (IK-02): Mevcut şifre hatalı! Şifre güncellenemedi.");
+            return false;
+        }
+        if (yeniSifre == null || yeniSifre.trim().length() < 4) {
+            System.out.println("HATA: Yeni şifre en az 4 karakter olmalıdır.");
+            return false;
+        }
+        this.sifreHash = yeniSifre;
+        System.out.println("BAŞARILI (IK-02): Şifre başarıyla güncellendi -> " + this.kullaniciAdi);
+        return true;
     }
 
-    // IK-02
     public String profilBilgisiGetir() {
-        // TODO: Implement business logic
-        return null;
+        // IK-02: Kullanıcı kendi profil bilgilerini görüntüler.
+        if (!this.oturumAcikMi) {
+            System.out.println("HATA (IK-01): Profil bilgisi görüntülemek için oturum açılmalıdır.");
+            return null;
+        }
+        return "Kullanıcı ID: " + kullaniciId +
+            " | Ad Soyad: " + ad + " " + soyad +
+            " | Kullanıcı Adı: " + kullaniciAdi +
+            " | Rol: " + rol +
+            " | Aktif: " + (aktifMi ? "Evet" : "Hayır");
     }
 }

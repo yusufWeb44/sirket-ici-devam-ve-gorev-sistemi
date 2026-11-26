@@ -3,8 +3,11 @@ package models;
 
 import enums.GorevDurumu;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 public class GorevGecmisi {
+    private static int idSayaci = 1;
+
     private int gecmisId;
     private int gorevId;
     private GorevDurumu oncekiDurum;
@@ -17,7 +20,7 @@ public class GorevGecmisi {
     }
 
     public GorevGecmisi(int gecmisId, int gorevId, GorevDurumu oncekiDurum, GorevDurumu yeniDurum,
-                        int islemYapanId, LocalDateTime islemZamani, String yorum) {
+        int islemYapanId, LocalDateTime islemZamani, String yorum) {
         this.gecmisId = gecmisId;
         this.gorevId = gorevId;
         this.oncekiDurum = oncekiDurum;
@@ -84,8 +87,21 @@ public class GorevGecmisi {
     }
 
     public static GorevGecmisi kayitOlustur(int gorevId, GorevDurumu oncekiDurum, GorevDurumu yeniDurum,
-                                            int islemYapanId, String yorum) {
-        // TODO: Implement business logic
-        return null;
+        int islemYapanId, String yorum) {
+        // IK-04: Görev geçmişi kaydı için Europe/Istanbul sunucu saati kullanılır.
+        LocalDateTime simdi = LocalDateTime.now(ZoneId.of("Europe/Istanbul"));
+        GorevGecmisi yeniKayit = new GorevGecmisi(
+            idSayaci++,
+            gorevId,
+            oncekiDurum,
+            yeniDurum,
+            islemYapanId,
+            simdi,
+            yorum
+        );
+        System.out.println("GÖREV GEÇMİŞİ LOGLANDI -> Görev ID: " + gorevId +
+            " | Geçiş: " + oncekiDurum + " -> " + yeniDurum +
+            " | İşlem Yapan ID: " + islemYapanId + " | Yorum: " + yorum);
+        return yeniKayit;
     }
 }

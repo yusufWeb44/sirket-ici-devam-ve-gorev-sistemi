@@ -3,8 +3,11 @@ package models;
 
 import enums.BildirimTuru;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 public class Bildirim {
+    private static int idSayaci = 1;
+
     private int bildirimId;
     private int aliciKullaniciId;
     private String baslik;
@@ -94,12 +97,24 @@ public class Bildirim {
     }
 
     public void okunduOlarakIsaretle() {
-        // TODO: Implement business logic
+        this.okunduMu = true;
+        System.out.println("BİLDİRİM OKUNDU (ID: " + this.bildirimId + "): " + this.baslik);
     }
 
-    public static Bildirim bildirimGonder(int aliciKullaniciId, String baslik, String mesaj,
-                                          BildirimTuru tur, int ilgiliKayitId) {
-        // TODO: Implement business logic
-        return null;
+    public static Bildirim bildirimGonder(int aliciKullaniciId, String baslik, String mesaj,BildirimTuru tur, int ilgiliKayitId) {
+        // IK-04: Bildirim zamanı için Europe/Istanbul sunucu saati kullanılır.
+        LocalDateTime simdi = LocalDateTime.now(ZoneId.of("Europe/Istanbul"));
+        Bildirim yeniBildirim = new Bildirim(
+            idSayaci++,
+            aliciKullaniciId,
+            baslik,
+            mesaj,
+            tur,
+            ilgiliKayitId,
+            false,
+            simdi
+        );
+        System.out.println("BİLDİRİM GÖNDERİLDİ -> Alici ID: " + aliciKullaniciId +" | Tür: " + tur + " | Başlik: " + baslik + " | Mesaj: " + mesaj);
+        return yeniBildirim;
     }
 }

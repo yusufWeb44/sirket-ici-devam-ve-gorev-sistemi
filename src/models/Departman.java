@@ -1,6 +1,7 @@
 // Youssef AYOUBI - 230404906
 package models;
 
+import enums.GorevDurumu;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -86,20 +87,50 @@ public class Departman {
     }
 
     public void calisanEkle(Calisan calisan) {
-        // TODO: Implement business logic
+        if (calisan == null) {
+            System.out.println("HATA: Geçersiz çalışan bilgisi departmana eklenemez.");
+            return;
+        }
+        // Aynı çalışanın departmana mükerrer eklenmesini önleme
+        for (Calisan mevcut : this.calisanlar) {
+            if (mevcut.getKullaniciId() == calisan.getKullaniciId()) {
+                System.out.println("UYARI: Çalışan (ID: " + calisan.getKullaniciId() + ") zaten " + this.departmanAdi + " departmanında kayıtlı.");
+                return;
+            }
+        }
+        this.calisanlar.add(calisan);
+        calisan.setDepartmanId(this.departmanId);
+        calisan.setDepartman(this);
+        System.out.println("BAŞARILI: " + calisan.getAd() + " " + calisan.getSoyad() + " -> " + this.departmanAdi + " departmanına eklendi.");
     }
 
     public void calisanCikar(int calisanId) {
-        // TODO: Implement business logic
+        boolean silindi = this.calisanlar.removeIf(c -> c.getKullaniciId() == calisanId);
+        if (silindi) {
+            System.out.println("BAŞARILI: Çalışan (ID: " + calisanId + ") " + this.departmanAdi + " departmanından çıkarıldı.");
+        } else {
+            System.out.println("HATA: Çalışan (ID: " + calisanId + ") bu departmanda bulunamadı.");
+        }
     }
 
     public List<Calisan> aktifCalisanlariGetir() {
-        // TODO: Implement business logic
-        return new ArrayList<>();
+        // IK-11: Yönetici görevi yalnızca departmanındaki aktif bir çalışana atayabilir.
+        List<Calisan> aktifListe = new ArrayList<>();
+        for (Calisan c : this.calisanlar) {
+            if (c.isAktifMi()) {
+                aktifListe.add(c);
+            }
+        }
+        return aktifListe;
     }
 
     public List<Gorev> aktifGorevleriGetir() {
-        // TODO: Implement business logic
-        return new ArrayList<>();
+        List<Gorev> aktifGorevListe = new ArrayList<>();
+        for (Gorev g : this.gorevler) {
+            if (g.getDurum() != GorevDurumu.TAMAMLANDI) {
+                aktifGorevListe.add(g);
+            }
+        }
+        return aktifGorevListe;
     }
 }

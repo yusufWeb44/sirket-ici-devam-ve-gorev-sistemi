@@ -1,10 +1,12 @@
 // Youssef AYOUBI - 230404906
 package models;
 
+import enums.BildirimTuru;
 import enums.GorevDurumu;
 import enums.Oncelik;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -140,21 +142,141 @@ public class Gorev {
     }
 
     public void calisanaAta(int calisanId, int yoneticiId) {
-        // TODO: Implement business logic
+        // IK-11: Görev çalışana atanır ve başlangıç inceleme sorumlusu yönetici olarak belirlenir.
+        GorevDurumu onceki = (this.durum != null) ? this.durum : GorevDurumu.YENI;
+        this.atananCalisanId = calisanId;
+        this.incelemeSorumlusuId = yoneticiId;
+        this.durum = GorevDurumu.ATANDI;
+
+        if (this.olusturmaTarihi == null) {
+            // IK-04: Sunucu zamanı (Europe/Istanbul)
+            this.olusturmaTarihi = LocalDateTime.now(ZoneId.of("Europe/Istanbul"));
+        }
+
+        GorevGecmisi kayit = GorevGecmisi.kayitOlustur(
+                this.gorevId,
+                onceki,
+                GorevDurumu.ATANDI,
+                yoneticiId,
+                "Görev çalışan (ID: " + calisanId + ") üzerine atandı."
+        );
+        this.gecmis.add(kayit);
+
+        Bildirim.bildirimGonder(
+                calisanId,
+                "Yeni Görev Atandı",
+                "'" + this.baslik + "' başlıklı görev size atandı.",
+                BildirimTuru.GOREV_ATAMA,
+                this.gorevId
+        );
     }
 
     public boolean durumaGecis(GorevDurumu yeniDurum, int islemYapanId, String aciklama) {
-        // TODO: Implement business logic
-        return false;
+        // IK-12: Görev durum geçişleri kontrol edilir; çalışan doğrudan TAMAMLANDI yapamaz.
+        if (yeniDurum == null) {
+            System.out.println("HATA: Geçersiz görev durumu!");
+            return false;
+        }
+        if (yeniDurum == GorevDurumu.TAMAMLANDI) {
+            System.out.println("HATA (IK-12): Görev doğrudan TAMAMLANDI durumuna geçirilemez; inceleme onayı gereklidir.");
+            return false;
+        }
+        if (this.durum == GorevDurumu.TAMAMLANDI) {
+            System.out.println("HATA (IK-12): Tamamlanmış görev üzerinde tekrar durum değişikliği yapılamaz.");
+            return false;
+        }
+
+        GorevDurumu onceki = this.durum;
+        this.durum = yeniDurum;
+
+        GorevGecmisi kayit = GorevGecmisi.kayitOlustur(
+                this.gorevId,
+                onceki,
+                yeniDurum,
+                islemYapanId,
+                (aciklama != null && !aciklama.isBlank()) ? aciklama : "Durum güncellendi."
+        );
+        this.gecmis.add(kayit);
+
+        System.out.println("BAŞARILI (IK-12): Görev (ID: " + this.gorevId + ") durumu güncellendi: " + onceki + " -> " + yeniDurum);
+        return true;
     }
 
     public boolean tamamlandiOnayla(int incelemeSorumlusuId, String aciklama) {
-        // TODO: Implement business logic
-        return false;
+        // IK-12: Yalnızca incelemeSorumlusu görevi onaylayarak TAMAMLANDI durumuna geçirebilir.
+        if (this.incelemeSorumlusuId != incelemeSorumlusuId) {
+            System.out.println("HATA (IK-12): Yetkisiz inceleme! Bu görevi yalnızca inceleme sorumlusu (ID: " +
+                    this.incelemeSorumlusuId + ") onaylayabilir.");
+            return false;
+        }
+        if (this.durum != GorevDurumu.INCELEME_BEKLIYOR) {
+            System.out.println("HATA (IK-12): Görev onaylanmadan önce INCELEME_BEKLIYOR durumunda olmalıdır. Mevcut durum: " + this.durum);
+            return false;
+        }
+
+        GorevDurumu onceki = this.durum;
+        this.durum = GorevDurumu.TAMAMLANDI;
+        // IK-04: Sunucu zamanı (Europe/Istanbul)
+        this.tamamlanmaTarihi = LocalDateTime.now(ZoneId.of("Europe/Istanbul"));
+
+        GorevGecmisi kayit = GorevGecmisi.kayitOlustur(
+                this.gorevId,
+                onceki,
+                GorevDurumu.TAMAMLANDI,
+                incelemeSorumlusuId,
+                (aciklama != null && !aciklama.isBlank()) ? aciklama : "Görev incelendi ve onaylandı."
+        );
+        this.gecmis.add(kayit);
+
+        Bildirim.bildirimGonder(
+                this.atananCalisanId,
+                "Görev Onaylandı",
+                "'" + this.baslik + "' göreviniz incelendi ve TAMAMLANDI olarak onaylandı.",
+                BildirimTuru.GOREV_INCELEME,
+                this.gorevId
+        );
+
+        System.out.println("BAŞARILI (IK-12): Görev (ID: " + this.gorevId + ") onaylandı ve TAMAMLANDI durumuna alındı.");
+        return true;
     }
 
     public boolean duzeltmeIste(int incelemeSorumlusuId, String retGerekcesi) {
-        // TODO: Implement business logic
-        return false;
+        // IK-12: Yalnızca incelemeSorumlusu düzeltme isteyebilir ve retGerekcesi zorunludur.
+        if (this.incelemeSorumlusuId != incelemeSorumlusuId) {
+            System.out.println("HATA (IK-12): Yetkisiz inceleme! Düzeltme talebi yalnızca inceleme sorumlusu (ID: " +
+                    this.incelemeSorumlusuId + ") tarafından yapılabilir.");
+            return false;
+        }
+        if (this.durum != GorevDurumu.INCELEME_BEKLIYOR) {
+            System.out.println("HATA (IK-12): Düzeltme istenebilmesi için görev INCELEME_BEKLIYOR durumunda olmalıdır.");
+            return false;
+        }
+        if (retGerekcesi == null || retGerekcesi.trim().isEmpty()) {
+            System.out.println("HATA (IK-12): Görev reddedilirken veya düzeltme istenirken gerekçe (retGerekcesi) girilmesi zorunludur!");
+            return false;
+        }
+
+        GorevDurumu onceki = this.durum;
+        this.durum = GorevDurumu.DUZELTME_ISTENDI;
+
+        GorevGecmisi kayit = GorevGecmisi.kayitOlustur(
+                this.gorevId,
+                onceki,
+                GorevDurumu.DUZELTME_ISTENDI,
+                incelemeSorumlusuId,
+                "Düzeltme İstendi - Gerekçe: " + retGerekcesi
+        );
+        this.gecmis.add(kayit);
+
+        Bildirim.bildirimGonder(
+                this.atananCalisanId,
+                "Görev İçin Düzeltme İstendi",
+                "'" + this.baslik + "' görevi için düzeltme istendi. Gerekçe: " + retGerekcesi,
+                BildirimTuru.GOREV_INCELEME,
+                this.gorevId
+        );
+
+        System.out.println("BAŞARILI (IK-12): Görev (ID: " + this.gorevId + ") için düzeltme istendi -> DUZELTME_ISTENDI.");
+        return true;
     }
 }

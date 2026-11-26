@@ -3,10 +3,6 @@
 // Adnan Derviş - 230404935
 // Mohamad BIRAHJAKLI - 230404939
 
-import enums.*;
-import models.*;
-import services.*;
-
 public class Main {
 
     public static void main(String[] args) {
