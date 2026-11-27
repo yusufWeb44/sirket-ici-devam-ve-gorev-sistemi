@@ -11,9 +11,11 @@ import enums.GorevDurumu;
 import enums.IzinDurumu;
 import enums.IzinTuru;
 import enums.Rol;
+import enums.TalepDurumu;
 import services.KonumServisi;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -26,10 +28,10 @@ public class Calisan extends Kullanici {
     protected Departman departman;
     protected String unvan;
     protected double temelUcret;
-    protected List<DevamKaydi> devamKayitlari;
+    private List<DevamKaydi> devamKayitlari;
     protected List<IzinTalebi> izinTalepleri;
     protected List<Gorev> atananGorevler;
-    protected List<DevamDuzeltmeTalebi> duzeltmeTalepleri;
+    private final List<DevamDuzeltmeTalebi> duzeltmeTalepleri;
     protected List<Bildirim> bildirimler;
 
     public Calisan() {
@@ -38,6 +40,12 @@ public class Calisan extends Kullanici {
         this.atananGorevler = new ArrayList<>();
         this.duzeltmeTalepleri = new ArrayList<>();
         this.bildirimler = new ArrayList<>();
+    }
+
+    // Mohamad BIRAHJAKLI - 230404939
+    public Calisan(List<DevamKaydi> oncekiKayitlar) {
+        this();
+        this.devamKayitlari.addAll(List.copyOf(oncekiKayitlar));
     }
 
     public Calisan(int kullaniciId, String kullaniciAdi, String sifreHash, String ad, String soyad,
@@ -89,12 +97,9 @@ public class Calisan extends Kullanici {
         this.temelUcret = temelUcret;
     }
 
-    public List<DevamKaydi> getDevamKayitlari() {
-        return devamKayitlari;
-    }
-
-    public void setDevamKayitlari(List<DevamKaydi> devamKayitlari) {
-        this.devamKayitlari = devamKayitlari;
+    // Mohamad BIRAHJAKLI - 230404939
+    public synchronized List<DevamKaydi> getDevamKayitlari() {
+        return List.copyOf(devamKayitlari);
     }
 
     public List<IzinTalebi> getIzinTalepleri() {
@@ -113,12 +118,9 @@ public class Calisan extends Kullanici {
         this.atananGorevler = atananGorevler;
     }
 
-    public List<DevamDuzeltmeTalebi> getDuzeltmeTalepleri() {
-        return duzeltmeTalepleri;
-    }
-
-    public void setDuzeltmeTalepleri(List<DevamDuzeltmeTalebi> duzeltmeTalepleri) {
-        this.duzeltmeTalepleri = duzeltmeTalepleri;
+    // Mohamad BIRAHJAKLI - 230404939
+    public synchronized List<DevamDuzeltmeTalebi> getDuzeltmeTalepleri() {
+        return List.copyOf(duzeltmeTalepleri);
     }
 
     public List<Bildirim> getBildirimler() {
@@ -409,14 +411,69 @@ public class Calisan extends Kullanici {
     }
 
     // Mohamad BIRAHJAKLI - 230404939
-    public DevamDuzeltmeTalebi devamDuzeltmeTalebiOlustur(LocalDate tarih, DuzeltmeTuru tur, String gerekce) {
-        // TODO: Implement business logic
-        return null;
+    public synchronized DevamDuzeltmeTalebi devamDuzeltmeTalebiOlustur(LocalDate tarih, DuzeltmeTuru tur, String gerekce) {
+        // IK-01, IK-02 ve IK-07: Calisan kendi kaydi icin gerekceli bir talep acabilir.
+        if (!isAktifMi() || !isOturumAcikMi() || getKullaniciId() <= 0 || tarih == null
+                || tarih.isAfter(LocalDate.now(ZoneId.of("Europe/Istanbul")))
+                || tur == null || gerekce == null || gerekce.isBlank()) {
+            System.out.println("RED (IK-07): Aktif oturum, gecerli tarih ve talep gerekcesi gereklidir.");
+            return null;
+        }
+
+        DevamKaydi kayit = tarihtekiDevamKaydiniBul(tarih);
+        if ((tur == DuzeltmeTuru.EKSIK_GIRIS && kayit != null && kayit.getGirisZamani() != null)
+                || (tur == DuzeltmeTuru.EKSIK_CIKIS
+                && (kayit == null || kayit.getGirisZamani() == null || kayit.getCikisZamani() != null))) {
+            System.out.println("RED (IK-07): Mevcut devam kaydi talep turuyle uyusmuyor.");
+            return null;
+        }
+        if (duzeltmeTalepleri.stream().anyMatch(talep -> tarih.equals(talep.getTarih())
+                && tur == talep.getDuzeltmeTuru() && talep.getDurum() == TalepDurumu.BEKLIYOR)) {
+            System.out.println("RED (IK-07): Bu gun ve tur icin bekleyen bir talep var.");
+            return null;
+        }
+
+        int talepId = duzeltmeTalepleri.stream().mapToInt(DevamDuzeltmeTalebi::getTalepId).max().orElse(0) + 1;
+        int kayitId = kayit == null ? 0 : kayit.getKayitId();
+        DevamDuzeltmeTalebi talep = new DevamDuzeltmeTalebi(this, talepId, kayitId, tarih, tur, gerekce.strip());
+        duzeltmeTalepleri.add(talep);
+        return talep;
+    }
+
+    // Mohamad BIRAHJAKLI - 230404939
+    void onayliDevamKaydiniEkle(DevamKaydi kayit) {
+        devamKayitlari.add(kayit);
+    }
+
+    // Mohamad BIRAHJAKLI - 230404939
+    DevamKaydi tarihtekiDevamKaydiniBul(LocalDate tarih) {
+        return devamKayitlari.stream()
+                .filter(kayit -> kayit.getCalisanId() == getKullaniciId() && tarih.equals(kayit.getTarih()))
+                .findFirst().orElse(null);
     }
 
     // Mohamad BIRAHJAKLI - 230404939
     public String kendiRaporunuGoruntule(int yil, int ay) {
-        // TODO: Implement business logic
-        return null;
+        // IK-01 ve IK-02: Calisan raporu yalnizca kendi kayitlarindan olusturulur.
+        if (!isAktifMi() || !isOturumAcikMi() || getKullaniciId() <= 0) {
+            return "RED (IK-02): Rapor icin aktif oturum gereklidir.";
+        }
+        if (!AylikMaliOzet.donemGecerliMi(yil, ay)) {
+            return "Gecersiz yil veya ay.";
+        }
+        AylikMaliOzet ozet = new AylikMaliOzet();
+        ozet.setCalisanId(getKullaniciId());
+        ozet.setYil(yil);
+        ozet.setAy(ay);
+        ozet.maliOzetHesapla(devamKayitlari, izinTalepleri, getTemelUcret(), new SistemAyarlari());
+        YearMonth donem = YearMonth.of(yil, ay);
+        boolean devamVar = devamKayitlari.stream().anyMatch(kayit -> kayit.getCalisanId() == getKullaniciId()
+                && kayit.getTarih() != null && YearMonth.from(kayit.getTarih()).equals(donem));
+        if (!devamVar && ozet.getToplamIzinliGun() == 0) {
+            return "Kayit bulunamadi.";
+        }
+        return String.format("%s | Kesinlesen yesil: %d | Kirmizi: %d | Izinli gun: %d | Devamsiz gun: %d",
+                donem, ozet.getToplamYesilPuan(), ozet.getToplamKirmiziPuan(), ozet.getToplamIzinliGun(),
+                ozet.getToplamDevamsizGun());
     }
 }

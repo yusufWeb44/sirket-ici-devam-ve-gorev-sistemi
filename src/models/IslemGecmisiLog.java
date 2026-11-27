@@ -2,8 +2,13 @@
 package models;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
 
 public class IslemGecmisiLog {
+    private static final List<IslemGecmisiLog> kayitlar = new ArrayList<>();
+
     private int logId;
     private int islemYapanKullaniciId;
     private String islemTuru;
@@ -94,7 +99,40 @@ public class IslemGecmisiLog {
 
     public static IslemGecmisiLog logKaydet(int islemYapanKullaniciId, String islemTuru, int hedefKayitId,
                                             String eskiDeger, String yeniDeger, String gerekce) {
-        // TODO: Implement business logic
-        return null;
+        // IK-04: Islem zamani sunucu saatinden alinir.
+        return logKaydet(islemYapanKullaniciId, islemTuru, hedefKayitId, eskiDeger, yeniDeger, gerekce,
+                LocalDateTime.now(ZoneId.of("Europe/Istanbul")));
+    }
+
+    // Mohamad BIRAHJAKLI - 230404939
+    static synchronized IslemGecmisiLog logKaydet(int kullaniciId, String islemTuru, int hedefKayitId,
+                                                 String eskiDeger, String yeniDeger, String gerekce,
+                                                 LocalDateTime islemZamani) {
+        IslemGecmisiLog kayit = new IslemGecmisiLog(kayitlar.size() + 1, kullaniciId, islemTuru,
+                hedefKayitId, eskiDeger, yeniDeger, gerekce, islemZamani);
+        kayitlar.add(kayit);
+        return kayit.kopyaOlustur();
+    }
+
+    // Mohamad BIRAHJAKLI - 230404939
+    public static synchronized List<IslemGecmisiLog> getKayitlar() {
+        return kayitlar.stream().map(IslemGecmisiLog::kopyaOlustur).toList();
+    }
+
+    private IslemGecmisiLog kopyaOlustur() {
+        IslemGecmisiLog kopya = new IslemGecmisiLog();
+        kopya.kayittanKopyala(this);
+        return kopya;
+    }
+
+    void kayittanKopyala(IslemGecmisiLog kayit) {
+        logId = kayit.logId;
+        islemYapanKullaniciId = kayit.islemYapanKullaniciId;
+        islemTuru = kayit.islemTuru;
+        hedefKayitId = kayit.hedefKayitId;
+        eskiDeger = kayit.eskiDeger;
+        yeniDeger = kayit.yeniDeger;
+        gerekce = kayit.gerekce;
+        islemZamani = kayit.islemZamani;
     }
 }

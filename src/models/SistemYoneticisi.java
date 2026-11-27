@@ -5,6 +5,7 @@
 package models;
 
 import enums.BildirimTuru;
+import enums.DevamDurumu;
 import enums.IzinDurumu;
 import enums.Rol;
 import java.time.LocalDate;
@@ -14,6 +15,7 @@ import java.time.ZonedDateTime;
 
 public class SistemYoneticisi extends Kullanici {
     private String yetkiSeviyesi;
+    private SistemAyarlari devamAyarlari = DevamDuzeltmeTalebi.varsayilanAyarlar();
 
     public SistemYoneticisi() {
         super();
@@ -136,6 +138,7 @@ public class SistemYoneticisi extends Kullanici {
         }
         System.out.println("BAŞARILI (IK-02): Sistem ayarları güncellendi (Kabul Yarıçapı: " +
                 ayarlar.getKabulYaricapiMetre() + "m, Zaman Dilimi: " + ayarlar.getZamanDilimi() + ").");
+        this.devamAyarlari = ayarlar;
         return true;
     }
 
@@ -143,14 +146,45 @@ public class SistemYoneticisi extends Kullanici {
     public boolean devamDuzeltmeTalebiDegerlendir(DevamDuzeltmeTalebi talep, boolean onay,
                                                   LocalDateTime duzeltilmisGiris, LocalDateTime duzeltilmisCikis,
                                                   String gerekce, IslemGecmisiLog log) {
-        // TODO: Implement business logic
-        return false;
+        return devamDuzeltmeTalebiDegerlendir(talep, onay, duzeltilmisGiris, duzeltilmisCikis,
+                gerekce, log, devamAyarlari);
+    }
+
+    // Mohamad BIRAHJAKLI - 230404939
+    public boolean devamDuzeltmeTalebiDegerlendir(DevamDuzeltmeTalebi talep, boolean onay,
+                                                  LocalDateTime duzeltilmisGiris, LocalDateTime duzeltilmisCikis,
+                                                  String gerekce, IslemGecmisiLog log, SistemAyarlari ayarlar) {
+        // IK-01, IK-02 ve IK-07: Duzeltmeye yalnizca aktif Sistem Yoneticisi karar verir.
+        if (talep == null) {
+            System.out.println("RED (IK-07): Duzeltme talebi gereklidir.");
+            return false;
+        }
+        return talep.karariUygula(this, onay, duzeltilmisGiris, duzeltilmisCikis,
+                gerekce, log, ayarlar);
     }
 
     // Mohamad BIRAHJAKLI - 230404939
     public boolean erkenGirisOnayla(DevamKaydi kayit, boolean onay) {
-        // TODO: Implement business logic
-        return false;
+        // IK-13: Sadece erken giris aday puani yonetici karariyla kesinlesir.
+        if (!devamKarariYetkisiVarMi() || kayit == null || kayit.getDurum() != DevamDurumu.ERKEN
+                || kayit.getAdayYesilPuan() <= 0) {
+            System.out.println("RED (IK-13): Yetkili oturum ve erken giris aday puani gereklidir.");
+            return false;
+        }
+        int oncekiPuan = kayit.getKesinlesenYesilPuan();
+        int yeniPuan = onay ? kayit.getAdayYesilPuan() : 0;
+        kayit.setErkenGirisOnaylandiMi(onay);
+        kayit.setKesinlesenYesilPuan(yeniPuan);
+        if (oncekiPuan != yeniPuan) {
+            String calisan = "Calisan=" + kayit.getCalisanId() + ", Kesinlesen yesil=";
+            IslemGecmisiLog.logKaydet(getKullaniciId(), "ERKEN_GIRIS_KARARI", kayit.getKayitId(),
+                    calisan + oncekiPuan, calisan + yeniPuan, onay ? "Onaylandi" : "Onaylanmadi");
+        }
+        return true;
+    }
+
+    final boolean devamKarariYetkisiVarMi() {
+        return isAktifMi() && isOturumAcikMi() && getRol() == Rol.SISTEM_YONETICISI && getKullaniciId() > 0;
     }
 
     // Adnan Derviş 230404935

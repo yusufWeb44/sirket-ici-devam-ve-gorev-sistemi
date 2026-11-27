@@ -63,24 +63,12 @@ public class DevamKaydi {
         return tarih;
     }
 
-    public void setTarih(LocalDate tarih) {
-        this.tarih = tarih;
-    }
-
     public LocalDateTime getGirisZamani() {
         return girisZamani;
     }
 
-    public void setGirisZamani(LocalDateTime girisZamani) {
-        this.girisZamani = girisZamani;
-    }
-
     public LocalDateTime getCikisZamani() {
         return cikisZamani;
-    }
-
-    public void setCikisZamani(LocalDateTime cikisZamani) {
-        this.cikisZamani = cikisZamani;
     }
 
     public KonumBilgisi getGirisKonumu() {
@@ -137,6 +125,20 @@ public class DevamKaydi {
 
     public void setErkenGirisOnaylandiMi(boolean erkenGirisOnaylandiMi) {
         this.erkenGirisOnaylandiMi = erkenGirisOnaylandiMi;
+    }
+
+    // Mohamad BIRAHJAKLI - 230404939
+    // IK-07: Kayitli giris ve cikis saatleri yalnizca yonetici onayli taleple duzeltilir.
+    void onayliDuzeltmeyiUygula(DevamDuzeltmeTalebi.OnayliSaatDuzeltmesi duzeltme, SistemAyarlari ayarlar) {
+        if (duzeltme.giris != null && !duzeltme.giris.equals(girisZamani)) {
+            girisZamani = duzeltme.giris;
+            erkenGirisOnaylandiMi = false;
+            kesinlesenYesilPuan = 0;
+            durumuVePuanlariHesapla(ayarlar);
+        }
+        if (duzeltme.cikis != null) {
+            cikisZamani = duzeltme.cikis;
+        }
     }
 
     public void girisKaydet(LocalDateTime zaman, KonumBilgisi konum, SistemAyarlari ayarlar) {

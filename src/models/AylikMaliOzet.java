@@ -1,10 +1,20 @@
 // Mohamad BIRAHJAKLI - 230404939
 package models;
 
+import enums.DevamDurumu;
+import enums.IzinDurumu;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class AylikMaliOzet {
+    private static final int PRIM_ICIN_YESIL_PUAN = 5;
+
     private int ozetId;
     private int calisanId;
     private int yil;
@@ -48,6 +58,7 @@ public class AylikMaliOzet {
     }
 
     public void setOzetId(int ozetId) {
+        kilitliOlmadiginiDogrula();
         this.ozetId = ozetId;
     }
 
@@ -56,6 +67,7 @@ public class AylikMaliOzet {
     }
 
     public void setCalisanId(int calisanId) {
+        kilitliOlmadiginiDogrula();
         this.calisanId = calisanId;
     }
 
@@ -64,6 +76,7 @@ public class AylikMaliOzet {
     }
 
     public void setYil(int yil) {
+        kilitliOlmadiginiDogrula();
         this.yil = yil;
     }
 
@@ -72,6 +85,7 @@ public class AylikMaliOzet {
     }
 
     public void setAy(int ay) {
+        kilitliOlmadiginiDogrula();
         this.ay = ay;
     }
 
@@ -80,6 +94,7 @@ public class AylikMaliOzet {
     }
 
     public void setToplamYesilPuan(int toplamYesilPuan) {
+        kilitliOlmadiginiDogrula();
         this.toplamYesilPuan = toplamYesilPuan;
     }
 
@@ -88,6 +103,7 @@ public class AylikMaliOzet {
     }
 
     public void setToplamKirmiziPuan(int toplamKirmiziPuan) {
+        kilitliOlmadiginiDogrula();
         this.toplamKirmiziPuan = toplamKirmiziPuan;
     }
 
@@ -96,6 +112,7 @@ public class AylikMaliOzet {
     }
 
     public void setToplamIzinliGun(int toplamIzinliGun) {
+        kilitliOlmadiginiDogrula();
         this.toplamIzinliGun = toplamIzinliGun;
     }
 
@@ -104,6 +121,7 @@ public class AylikMaliOzet {
     }
 
     public void setToplamDevamsizGun(int toplamDevamsizGun) {
+        kilitliOlmadiginiDogrula();
         this.toplamDevamsizGun = toplamDevamsizGun;
     }
 
@@ -112,6 +130,7 @@ public class AylikMaliOzet {
     }
 
     public void setTemelUcret(double temelUcret) {
+        kilitliOlmadiginiDogrula();
         this.temelUcret = temelUcret;
     }
 
@@ -120,6 +139,7 @@ public class AylikMaliOzet {
     }
 
     public void setOrnekPrimTutari(double ornekPrimTutari) {
+        kilitliOlmadiginiDogrula();
         this.ornekPrimTutari = ornekPrimTutari;
     }
 
@@ -128,6 +148,7 @@ public class AylikMaliOzet {
     }
 
     public void setOrnekKesintiTutari(double ornekKesintiTutari) {
+        kilitliOlmadiginiDogrula();
         this.ornekKesintiTutari = ornekKesintiTutari;
     }
 
@@ -136,6 +157,7 @@ public class AylikMaliOzet {
     }
 
     public void setNetMaliFark(double netMaliFark) {
+        kilitliOlmadiginiDogrula();
         this.netMaliFark = netMaliFark;
     }
 
@@ -144,7 +166,11 @@ public class AylikMaliOzet {
     }
 
     public void setKilitliMi(boolean kilitliMi) {
-        this.kilitliMi = kilitliMi;
+        if (kilitliMi) {
+            ozetiKilitle();
+        } else {
+            kilitliOlmadiginiDogrula();
+        }
     }
 
     public LocalDateTime getOlusturmaZamani() {
@@ -152,15 +178,104 @@ public class AylikMaliOzet {
     }
 
     public void setOlusturmaZamani(LocalDateTime olusturmaZamani) {
+        kilitliOlmadiginiDogrula();
         this.olusturmaZamani = olusturmaZamani;
     }
 
+    // Mohamad BIRAHJAKLI - 230404939
     public void maliOzetHesapla(List<DevamKaydi> kayitlar, List<IzinTalebi> izinler,
                                 double temelUcret, SistemAyarlari ayarlar) {
-        // TODO: Implement business logic
+        kilitliOlmadiginiDogrula();
+        if (calisanId <= 0 || !donemGecerliMi(yil, ay) || ayarlar == null) {
+            throw new IllegalArgumentException("IK-14: Gecerli bir calisan, donem ve sistem ayarlari gereklidir.");
+        }
+        if (!gecerliTutarMi(temelUcret) || !gecerliTutarMi(ayarlar.getYesilPuanPrimTutari())
+                || !gecerliTutarMi(ayarlar.getKirmiziPuanKesintiTutari())) {
+            throw new IllegalArgumentException("IK-14: Ucret, prim ve kesinti tutarlari negatif veya gecersiz olamaz.");
+        }
+
+        YearMonth donem = YearMonth.of(yil, ay);
+        Set<LocalDate> izinliGunler = onayliIzinGunleriniBul(izinler, donem);
+        Set<LocalDate> devamsizGunler = new HashSet<>();
+        int yesilPuan = 0;
+        int kirmiziPuan = 0;
+        for (DevamKaydi kayit : kayitlar == null ? List.<DevamKaydi>of() : kayitlar) {
+            if (kayit == null || kayit.getCalisanId() != calisanId || kayit.getTarih() == null
+                    || !YearMonth.from(kayit.getTarih()).equals(donem)) {
+                continue;
+            }
+            yesilPuan += kayit.getKesinlesenYesilPuan();
+            // IK-10: Onayli izin gunu devamsizlik veya gecikme kesintisi olusturmaz.
+            if (!izinliGunler.contains(kayit.getTarih())) {
+                kirmiziPuan += kayit.getKirmiziPuan();
+                if (kayit.getDurum() == DevamDurumu.DEVAMSIZ) {
+                    devamsizGunler.add(kayit.getTarih());
+                }
+            }
+        }
+
+        // IK-14: Sadece bu ayin kesinlesen besli yesil puan gruplarina prim verilir.
+        BigDecimal prim = tutarHesapla(ayarlar.getYesilPuanPrimTutari(), yesilPuan / PRIM_ICIN_YESIL_PUAN);
+        BigDecimal kesinti = tutarHesapla(ayarlar.getKirmiziPuanKesintiTutari(), kirmiziPuan);
+        this.olusturmaZamani = ayarlar.sunucuZamaniGetir().toLocalDateTime();
+        this.toplamYesilPuan = yesilPuan;
+        this.toplamKirmiziPuan = kirmiziPuan;
+        this.toplamIzinliGun = izinliGunler.size();
+        this.toplamDevamsizGun = devamsizGunler.size();
+        this.temelUcret = temelUcret;
+        this.ornekPrimTutari = prim.doubleValue();
+        this.ornekKesintiTutari = kesinti.doubleValue();
+        this.netMaliFark = prim.subtract(kesinti).doubleValue();
     }
 
+    // Mohamad BIRAHJAKLI - 230404939
     public void ozetiKilitle() {
-        // TODO: Implement business logic
+        // IK-14: Kesinlesen donem sonraki tarife veya kayit degisikliklerinden etkilenmez.
+        if (olusturmaZamani == null) {
+            throw new IllegalStateException("IK-14: Kilitlemeden once mali ozet hesaplanmalidir.");
+        }
+        kilitliMi = true;
+    }
+
+    static boolean donemGecerliMi(int yil, int ay) {
+        return yil >= 1 && yil <= 9999 && ay >= 1 && ay <= 12;
+    }
+
+    private Set<LocalDate> onayliIzinGunleriniBul(List<IzinTalebi> izinler, YearMonth donem) {
+        Set<LocalDate> gunler = new HashSet<>();
+        LocalDate ayBaslangici = donem.atDay(1);
+        LocalDate aySonu = donem.atEndOfMonth();
+        for (IzinTalebi izin : izinler == null ? List.<IzinTalebi>of() : izinler) {
+            if (izin == null || izin.getCalisanId() != calisanId || izin.getDurum() != IzinDurumu.ONAYLANDI
+                    || izin.getBaslangicTarihi() == null || izin.getBitisTarihi() == null) {
+                continue;
+            }
+            LocalDate baslangic = izin.getBaslangicTarihi();
+            LocalDate bitis = izin.getBitisTarihi();
+            if (baslangic.isBefore(ayBaslangici)) {
+                baslangic = ayBaslangici;
+            }
+            if (bitis.isAfter(aySonu)) {
+                bitis = aySonu;
+            }
+            for (LocalDate tarih = baslangic; !tarih.isAfter(bitis); tarih = tarih.plusDays(1)) {
+                gunler.add(tarih);
+            }
+        }
+        return gunler;
+    }
+
+    private static boolean gecerliTutarMi(double tutar) {
+        return Double.isFinite(tutar) && tutar >= 0;
+    }
+
+    private static BigDecimal tutarHesapla(double birimTutar, int adet) {
+        return BigDecimal.valueOf(birimTutar).multiply(BigDecimal.valueOf(adet)).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private void kilitliOlmadiginiDogrula() {
+        if (kilitliMi) {
+            throw new IllegalStateException("IK-14: Kilitli mali ozet degistirilemez.");
+        }
     }
 }
