@@ -1,4 +1,4 @@
-// Adnan Derviş 230404935
+// Adnan Dervis - 230404935
 package models;
 
 import enums.BildirimTuru;
@@ -23,13 +23,13 @@ public class IzinTalebi {
     private LocalDateTime olusturmaZamani;
     private LocalDateTime kararZamani;
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public IzinTalebi() {
-        // IK-04: Oluşturma zamanı Europe/Istanbul sunucu saatine göre atanır.
+        // IK-04: sunucu saati Europe/Istanbul
         this.olusturmaZamani = ZonedDateTime.now(ZoneId.of("Europe/Istanbul")).toLocalDateTime();
     }
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public IzinTalebi(int izinId, int calisanId, LocalDate baslangicTarihi, LocalDate bitisTarihi,
                       IzinTuru izinTuru, String aciklama, IzinDurumu durum, int onaylayanYoneticiId,
                       String retGerekcesi, LocalDateTime olusturmaZamani, LocalDateTime kararZamani) {
@@ -42,7 +42,7 @@ public class IzinTalebi {
         this.durum = durum;
         this.onaylayanYoneticiId = onaylayanYoneticiId;
         this.retGerekcesi = retGerekcesi;
-        // IK-04: Oluşturma zamanı boşsa Europe/Istanbul sunucu saatine göre atanır.
+        // IK-04: bos gelirse Europe/Istanbul sunucu saati atanir
         this.olusturmaZamani = (olusturmaZamani != null)
                 ? olusturmaZamani
                 : ZonedDateTime.now(ZoneId.of("Europe/Istanbul")).toLocalDateTime();
@@ -137,7 +137,7 @@ public class IzinTalebi {
         this.kararZamani = kararZamani;
     }
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public long gunSayisiHesapla() {
         if (!tarihAraligiGecerliMi()) {
             return 0L;
@@ -145,7 +145,7 @@ public class IzinTalebi {
         return ChronoUnit.DAYS.between(this.baslangicTarihi, this.bitisTarihi) + 1;
     }
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public boolean tarihAraligiGecerliMi() {
         if (this.baslangicTarihi == null || this.bitisTarihi == null) {
             return false;
@@ -153,104 +153,104 @@ public class IzinTalebi {
         return !this.bitisTarihi.isBefore(this.baslangicTarihi);
     }
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public void onayla(int yoneticiId) {
-        // IK-09: Çalışan veya departman yöneticisi kendi izin talebini onaylayamaz.
+        // IK-09: kullanici kendi izin talebini onaylayamaz
         if (yoneticiId == this.calisanId) {
-            System.out.println("Yetkisiz İşlem: Kendi izin talebinizi onaylayamazsınız! (IK-09)");
+            System.out.println("Uyari: Kendi izin talebinizi onaylayamazsiniz.");
             return;
         }
 
-        // IK-10: Yalnızca BEKLIYOR durumundaki izin talepleri onaylanabilir.
+        // IK-10: sadece BEKLIYOR durumundaki talepler onaylanabilir
         if (this.durum != IzinDurumu.BEKLIYOR) {
-            System.out.println("Hata: Yalnızca BEKLIYOR durumundaki izin talepleri onaylanabilir! Mevcut durum: " + this.durum + " (IK-10)");
+            System.out.println("Uyari: Sadece BEKLIYOR durumundaki izin talepleri onaylanabilir. Mevcut durum: " + this.durum);
             return;
         }
 
         this.durum = IzinDurumu.ONAYLANDI;
         this.onaylayanYoneticiId = yoneticiId;
-        // IK-04: Karar zamanı Europe/Istanbul sunucu saatine göre kaydedilir.
+        // IK-04: karar zamani Europe/Istanbul saatine gore alinir
         this.kararZamani = ZonedDateTime.now(ZoneId.of("Europe/Istanbul")).toLocalDateTime();
 
         Bildirim.bildirimGonder(
                 this.calisanId,
-                "İzin Kararı",
-                "İzniniz Onaylandı",
+                "Izin Karari",
+                "Izniniz Onaylandi",
                 BildirimTuru.IZIN_KARARI,
                 this.izinId
         );
     }
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public boolean reddet(int yoneticiId, String retGerekcesi) {
-        // IK-09: Çalışan veya departman yöneticisi kendi izin talebini reddedemez.
+        // IK-09: kullanici kendi izin talebini reddedemez
         if (yoneticiId == this.calisanId) {
-            System.out.println("Yetkisiz İşlem: Kendi izin talebinizi reddedemezsiniz! (IK-09)");
+            System.out.println("Uyari: Kendi izin talebinizi reddedemezsiniz.");
             return false;
         }
 
-        // IK-09: Ret işlemi için gerekçe girilmesi zorunludur.
+        // IK-09: ret isleminde gerekce zorunludur
         if (retGerekcesi == null || retGerekcesi.trim().isEmpty()) {
-            System.out.println("Hata: Ret için gerekçe belirtilmesi zorunludur! (IK-09)");
+            System.out.println("Uyari: Ret islemi icin gerekce yazilmalidir.");
             return false;
         }
 
-        // IK-10: Yalnızca BEKLIYOR durumundaki izin talepleri reddedilebilir.
+        // IK-10: sadece BEKLIYOR durumundaki talepler reddedilebilir
         if (this.durum != IzinDurumu.BEKLIYOR) {
-            System.out.println("Hata: Yalnızca BEKLIYOR durumundaki izin talepleri reddedilebilir! Mevcut durum: " + this.durum + " (IK-10)");
+            System.out.println("Uyari: Sadece BEKLIYOR durumundaki izin talepleri reddedilebilir. Mevcut durum: " + this.durum);
             return false;
         }
 
         this.durum = IzinDurumu.REDDEDILDI;
         this.onaylayanYoneticiId = yoneticiId;
         this.retGerekcesi = retGerekcesi.trim();
-        // IK-04: Karar zamanı Europe/Istanbul sunucu saatine göre kaydedilir.
+        // IK-04: karar zamani Europe/Istanbul saatine gore alinir
         this.kararZamani = ZonedDateTime.now(ZoneId.of("Europe/Istanbul")).toLocalDateTime();
 
         Bildirim.bildirimGonder(
                 this.calisanId,
-                "İzin Kararı",
-                "İzin Talebiniz Reddedildi: " + this.retGerekcesi,
+                "Izin Karari",
+                "Izin Talebiniz Reddedildi: " + this.retGerekcesi,
                 BildirimTuru.IZIN_KARARI,
                 this.izinId
         );
         return true;
     }
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public boolean iptalEt(boolean yoneticiOnayiVarMi) {
         return iptalEt(this.calisanId, yoneticiOnayiVarMi);
     }
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public boolean iptalEt(int islemYapanId, boolean yoneticiOnayiVarMi) {
-        // IK-10: Bekleyen izin talebi yalnızca talep sahibi çalışan tarafından doğrudan iptal edilebilir.
+        // IK-10: bekleyen izin sadece talep sahibi calisan tarafindan iptal edilebilir
         if (this.durum == IzinDurumu.BEKLIYOR) {
             if (islemYapanId != this.calisanId) {
-                System.out.println("Yetkisiz İşlem: Bekleyen izin talebini yalnızca talep sahibi çalışan iptal edebilir! (IK-10)");
+                System.out.println("Uyari: Bekleyen izin talebini sadece talep sahibi iptal edebilir.");
                 return false;
             }
             this.durum = IzinDurumu.IPTAL_EDILDI;
-            // IK-04: İşlem zamanı Europe/Istanbul sunucu saatine göre kaydedilir.
+            // IK-04: islem zamani Europe/Istanbul saatine gore alinir
             this.kararZamani = ZonedDateTime.now(ZoneId.of("Europe/Istanbul")).toLocalDateTime();
-            System.out.println("BAŞARILI (IK-10): Bekleyen izin talebi (ID: " + this.izinId + ") iptal edildi.");
+            System.out.println("Bilgi: Bekleyen izin talebi iptal edildi -> ID: " + this.izinId);
             return true;
         }
 
-        // IK-10: Onaylanmış izin talebi çalışan tarafından doğrudan iptal edilemez; yönetici onayı gerekir.
+        // IK-10: onaylanmis izin calisan tarafindan direkt iptal edilemez, yonetici onayi gerekir
         if (this.durum == IzinDurumu.ONAYLANDI) {
             if (!yoneticiOnayiVarMi) {
-                System.out.println("Hata: Onaylanmış izin talebi çalışan tarafından doğrudan iptal edilemez; resmi yönetici onayı gereklidir! (IK-10)");
+                System.out.println("Uyari: Onaylanmis izin talebi yonetici onayi olmadan iptal edilemez.");
                 return false;
             }
             this.durum = IzinDurumu.IPTAL_EDILDI;
-            // IK-04: İşlem zamanı Europe/Istanbul sunucu saatine göre kaydedilir.
+            // IK-04: islem zamani Europe/Istanbul saatine gore alinir
             this.kararZamani = ZonedDateTime.now(ZoneId.of("Europe/Istanbul")).toLocalDateTime();
-            System.out.println("BAŞARILI (IK-10): Onaylanmış izin talebi (ID: " + this.izinId + ") yönetici onayı ile iptal edildi.");
+            System.out.println("Bilgi: Onaylanmis izin talebi yonetici onayi ile iptal edildi -> ID: " + this.izinId);
             return true;
         }
 
-        System.out.println("Hata: Mevcut durumda (" + this.durum + ") bulunan izin talebi iptal edilemez! (IK-10)");
+        System.out.println("Uyari: Bu durumdaki (" + this.durum + ") izin talebi iptal edilemez.");
         return false;
     }
 }

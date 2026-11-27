@@ -141,24 +141,25 @@ public class DevamKaydi {
         }
     }
 
+    // IK-03, IK-04, IK-05: gunluk giris kaydi ve konum/zaman kontrolu
     public void girisKaydet(LocalDateTime zaman, KonumBilgisi konum, SistemAyarlari ayarlar) {
         if (this.girisZamani != null) {
-            System.out.println("RED (IK-05): Bugun icin zaten ise giris kaydi bulunmaktadir!");
+            System.out.println("Uyari: Bugun icin zaten giris kaydi var.");
             return;
         }
 
         if (zaman == null) {
-            System.out.println("RED (IK-04): Giris zamani bos (null) olamaz!");
+            System.out.println("Uyari: Giris zamani bos olamaz.");
             return;
         }
 
         if (ayarlar == null) {
-            System.out.println("RED (IK-03): Sistem ayarlari bulunamadi!");
+            System.out.println("Uyari: Sistem ayarlari bulunamadi.");
             return;
         }
 
         if (!KonumServisi.konumDogrula(konum, ayarlar)) {
-            System.out.println("RED (IK-03): Konum dogrulamasi basarisiz, ise giris kaydi olusturulmadi!");
+            System.out.println("Uyari: Konum dogrulanamadi, giris kaydedilmedi.");
             return;
         }
 
@@ -166,48 +167,50 @@ public class DevamKaydi {
         this.tarih = zaman.toLocalDate();
         this.girisKonumu = konum;
         durumuVePuanlariHesapla(ayarlar);
-        System.out.println("BASARILI (IK-03/IK-04/IK-05): Ise giris kaydedildi -> Tarih: " + this.tarih
-                + ", Saat: " + this.girisZamani.toLocalTime() + ", Durum: " + this.durum);
+        System.out.println("Bilgi: Ise giris kaydedildi -> Tarih=" + this.tarih
+                + ", Saat=" + this.girisZamani.toLocalTime() + ", Durum=" + this.durum);
     }
 
+    // IK-05: giris kaydi varsa cikis saati ve konumu kaydedilir
     public boolean cikisKaydet(LocalDateTime zaman, KonumBilgisi konum) {
         if (this.girisZamani == null) {
-            System.out.println("RED (IK-05): Giris kaydi olmadan cikis yapilamaz!");
+            System.out.println("Uyari: Giris kaydi olmadan cikis yapilamaz.");
             return false;
         }
 
         if (this.cikisZamani != null) {
-            System.out.println("RED (IK-05): Bugun icin zaten cikis kaydi olusturulmus!");
+            System.out.println("Uyari: Bugun icin zaten cikis yapilmis.");
             return false;
         }
 
         if (zaman == null) {
-            System.out.println("RED (IK-04): Cikis zamani bos (null) olamaz!");
+            System.out.println("Uyari: Cikis zamani bos olamaz.");
             return false;
         }
 
         if (zaman.isBefore(this.girisZamani)) {
-            System.out.println("RED (IK-04): Cikis zamani giris zamanindan once olamaz!");
+            System.out.println("Uyari: Cikis zamani giristen once olamaz.");
             return false;
         }
 
         if (konum == null || !konum.gecerliKoordinatMi()) {
-            System.out.println("RED (IK-03): Cikis konum bilgisi gecersiz!");
+            System.out.println("Uyari: Cikis konum bilgisi gecersiz.");
             return false;
         }
 
         this.cikisZamani = zaman;
         this.cikisKonumu = konum;
-        System.out.println("BASARILI (IK-05): Ise cikis kaydedildi -> Saat: " + this.cikisZamani.toLocalTime());
+        System.out.println("Bilgi: Ise cikis kaydedildi -> Saat=" + this.cikisZamani.toLocalTime());
         return true;
     }
 
+    // IK-13: mesai saatine gore erken/gec durumu ve aday puanlari hesapla
     public void durumuVePuanlariHesapla(SistemAyarlari ayarlar) {
         if (this.girisZamani == null) {
             return;
         }
         if (ayarlar == null || ayarlar.getMesaiBaslangic() == null) {
-            System.out.println("RED (IK-13): Mesai baslangic saati tanimli degil!");
+            System.out.println("Uyari: Mesai baslangic saati tanimli degil.");
             return;
         }
 
@@ -241,19 +244,20 @@ public class DevamKaydi {
     }
 
     
+    // IK-06: giris yapilmamis gunu devamsiz olarak isaretle
     public void devamsizOlarakIsaretle(LocalDate tarih) {
         if (tarih == null) {
-            System.out.println("RED (IK-06): Devamsizlik isaretlemesi icin tarih bos olamaz!");
+            System.out.println("Uyari: Tarih bos olamaz.");
             return;
         }
         if (this.girisZamani != null) {
-            System.out.println("RED (IK-06): Gecerli giris kaydi bulunan gun DEVAMSIZ yapilamaz!");
+            System.out.println("Uyari: Giris kaydi olan gun DEVAMSIZ yapilamaz.");
             return;
         }
         this.tarih = tarih;
         this.durum = DevamDurumu.DEVAMSIZ;
         this.adayYesilPuan = 0;
         this.kesinlesenYesilPuan = 0;
-        System.out.println("KAYIT (IK-06): " + tarih + " tarihi icin durum DEVAMSIZ olarak isaretlendi.");
+        System.out.println("Bilgi: " + tarih + " tarihi devamsiz olarak isaretlendi.");
     }
 }

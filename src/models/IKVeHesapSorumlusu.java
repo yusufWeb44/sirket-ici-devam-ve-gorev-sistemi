@@ -42,13 +42,13 @@ public class IKVeHesapSorumlusu extends Calisan {
 
     // Mohamad BIRAHJAKLI - 230404939
     public List<DevamKaydi> sirketDevamRaporuAl(List<DevamKaydi> tumKayitlar, LocalDate baslangic, LocalDate bitis) {
-        // IK-01 ve IK-02: Sirket raporuna aktif IK ve Hesap Sorumlusu erisebilir.
+        // IK-01, IK-02: sirket raporunu sadece aktif IK ve Hesap Sorumlusu gorebilir
         if (!raporYetkisiVarMi()) {
-            System.out.println("RED (IK-02): Sirket raporu icin IK ve Hesap Sorumlusu oturumu gereklidir.");
+            System.out.println("Uyari: Sirket raporu icin IK ve Hesap Sorumlusu oturumu gereklidir.");
             return List.of();
         }
         if (baslangic == null || bitis == null || bitis.isBefore(baslangic) || tumKayitlar == null) {
-            System.out.println("Gecersiz rapor tarih araligi veya kayit listesi.");
+            System.out.println("Uyari: Gecersiz rapor tarih araligi veya kayit listesi.");
             return List.of();
         }
         List<DevamKaydi> rapor = tumKayitlar.stream().filter(Objects::nonNull)
@@ -64,10 +64,10 @@ public class IKVeHesapSorumlusu extends Calisan {
 
     // Mohamad BIRAHJAKLI - 230404939
     public AylikMaliOzet aylikMaliOzetOlusturVeKilitle(Calisan calisan, int yil, int ay, SistemAyarlari ayarlar) {
-        // IK-01, IK-02 ve IK-14: Mali donemi yalnizca yetkili IK sorumlusu kilitleyebilir.
+        // IK-01, IK-02, IK-14: mali donemi sadece yetkili IK sorumlusu kilitleyebilir
         if (!raporYetkisiVarMi() || calisan == null || calisan.getKullaniciId() <= 0
                 || !AylikMaliOzet.donemGecerliMi(yil, ay)) {
-            System.out.println("RED (IK-14): Yetkili oturum, gecerli calisan ve donem gereklidir.");
+            System.out.println("Uyari: Mali ozet icin yetkili oturum, gecerli calisan ve donem gereklidir.");
             return null;
         }
         DonemAnahtari anahtar = new DonemAnahtari(calisan.getKullaniciId(), YearMonth.of(yil, ay));
@@ -90,7 +90,7 @@ public class IKVeHesapSorumlusu extends Calisan {
                 kilitliOzetler.put(anahtar, ozet);
                 return ozet;
             } catch (IllegalArgumentException hata) {
-                System.out.println("RED (" + hata.getMessage() + ")");
+                System.out.println("Uyari: " + hata.getMessage());
                 return null;
             }
         }

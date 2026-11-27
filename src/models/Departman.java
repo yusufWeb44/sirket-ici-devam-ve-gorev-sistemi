@@ -88,33 +88,33 @@ public class Departman {
 
     public void calisanEkle(Calisan calisan) {
         if (calisan == null) {
-            System.out.println("HATA: Geçersiz çalışan bilgisi departmana eklenemez.");
+            System.out.println("Uyari: Gecersiz calisan departmana eklenemez.");
             return;
         }
-        // Aynı çalışanın departmana mükerrer eklenmesini önleme
+        // ayni calisani iki kez eklememek icin kontrol
         for (Calisan mevcut : this.calisanlar) {
             if (mevcut.getKullaniciId() == calisan.getKullaniciId()) {
-                System.out.println("UYARI: Çalışan (ID: " + calisan.getKullaniciId() + ") zaten " + this.departmanAdi + " departmanında kayıtlı.");
+                System.out.println("Bilgi: Calisan (ID: " + calisan.getKullaniciId() + ") zaten " + this.departmanAdi + " departmaninda kayitli.");
                 return;
             }
         }
         this.calisanlar.add(calisan);
         calisan.setDepartmanId(this.departmanId);
         calisan.setDepartman(this);
-        System.out.println("BAŞARILI: " + calisan.getAd() + " " + calisan.getSoyad() + " -> " + this.departmanAdi + " departmanına eklendi.");
+        System.out.println("Bilgi: " + calisan.getAd() + " " + calisan.getSoyad() + " -> " + this.departmanAdi + " departmanina eklendi.");
     }
 
     public void calisanCikar(int calisanId) {
         boolean silindi = this.calisanlar.removeIf(c -> c.getKullaniciId() == calisanId);
         if (silindi) {
-            System.out.println("BAŞARILI: Çalışan (ID: " + calisanId + ") " + this.departmanAdi + " departmanından çıkarıldı.");
+            System.out.println("Bilgi: Calisan (ID: " + calisanId + ") " + this.departmanAdi + " departmanindan cikarildi.");
         } else {
-            System.out.println("HATA: Çalışan (ID: " + calisanId + ") bu departmanda bulunamadı.");
+            System.out.println("Uyari: Calisan (ID: " + calisanId + ") bu departmanda bulunamadi.");
         }
     }
 
     public List<Calisan> aktifCalisanlariGetir() {
-        // IK-11: Yönetici görevi yalnızca departmanındaki aktif bir çalışana atayabilir.
+        // IK-11: sadece departmandaki aktif calisanlar dondurulur
         List<Calisan> aktifListe = new ArrayList<>();
         for (Calisan c : this.calisanlar) {
             if (c.isAktifMi()) {

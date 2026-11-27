@@ -1,7 +1,7 @@
-// Ortak Sınıf - Görev Dağılımı:
-// - Youssef AYOUBI - 230404906 (Sınıf yapısı ve gorevDurumuGuncelle)
+// Ortak Sinif - Gorev Dagilimi:
+// - Youssef AYOUBI - 230404906 (Sinif yapisi ve gorevDurumuGuncelle)
 // - Ahmad Alamin - 230404933 (iseGirisYap, iseCikisYap, gunlukGirisKontrolu)
-// - Adnan Derviş - 230404935 (izinTalebiOlustur, izinCakismasiVarMi, izinTalebiIptalEt)
+// - Adnan Dervis - 230404935 (izinTalebiOlustur, izinCakismasiVarMi, izinTalebiIptalEt)
 // - Mohamad BIRAHJAKLI - 230404939 (devamDuzeltmeTalebiOlustur, kendiRaporunuGoruntule)
 package models;
 
@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Calisan extends Kullanici {
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     private static int izinIdSayaci = 1;
     protected int departmanId;
     protected Departman departman;
@@ -132,32 +132,32 @@ public class Calisan extends Kullanici {
     }
 
     // Ahmad Alamin - 230404933
-    // IK-01 & IK-03 & IK-04 & IK-05: Aktif hesap kontrolu, konum dogrulama ve gunluk tek giris kaydi
+    // IK-01, IK-03, IK-04, IK-05: aktif hesap, konum dogrulama ve gunluk tek giris kontrolu
     public DevamKaydi iseGirisYap(KonumBilgisi konum, SistemAyarlari ayarlar) {
-        // IK-01: Hesap aktiflik kontrolu
+        // IK-01: pasif hesap giris yapamaz
         if (!isAktifMi()) {
-            System.out.println("RED (IK-01): Pasif hesap ise giris yapamaz!");
+            System.out.println("Uyari: Pasif hesap ise giris yapamaz.");
             return null;
         }
 
         if (ayarlar == null) {
-            System.out.println("RED (IK-03): Sistem ayarlari bulunamadi!");
+            System.out.println("Uyari: Sistem ayarlari bulunamadi.");
             return null;
         }
 
-        // IK-04: Sunucu zaman dilimine gore zaman alimi
+        // IK-04: sunucu saati
         ZonedDateTime sunucuZamani = ayarlar.sunucuZamaniGetir();
         LocalDate bugun = sunucuZamani.toLocalDate();
 
-        // IK-05: Ayni gun icin zaten giris kaydi var mi kontrolu
+        // IK-05: ayni gun ikinci giris engeli
         if (gunlukGirisKontrolu(bugun)) {
-            System.out.println("RED (IK-05): Bugun (" + bugun + ") icin zaten giris kaydi bulunmaktadir!");
+            System.out.println("Uyari: Bugun (" + bugun + ") icin zaten giris kaydi var.");
             return null;
         }
 
-        // IK-03: Konum ve dogruluk siniri kontrolu
+        // IK-03: konum siniri kontrolu
         if (!KonumServisi.konumDogrula(konum, ayarlar)) {
-            System.out.println("RED (IK-03): Konum dogrulamasi basarisiz, ise giris reddedildi!");
+            System.out.println("Uyari: Konum dogrulanamadi, ise giris reddedildi.");
             return null;
         }
 
@@ -179,25 +179,25 @@ public class Calisan extends Kullanici {
     }
 
     // Ahmad Alamin - 230404933
-    // IK-01 & IK-03 & IK-04 & IK-05: Aktif giris kaydi varsa konum ve sunucu zamani ile cikis kaydeder
+    // IK-01, IK-03, IK-04, IK-05: aktif giris kaydi varsa konum ve sunucu saatiyle cikis kaydeder
     public DevamKaydi iseCikisYap(KonumBilgisi konum, SistemAyarlari ayarlar) {
-        // IK-01: Hesap aktiflik kontrolu
+        // IK-01: pasif hesap cikis yapamaz
         if (!isAktifMi()) {
-            System.out.println("RED (IK-01): Pasif hesap ise cikis yapamaz!");
+            System.out.println("Uyari: Pasif hesap ise cikis yapamaz.");
             return null;
         }
 
         if (ayarlar == null) {
-            System.out.println("RED (IK-03): Sistem ayarlari bulunamadi!");
+            System.out.println("Uyari: Sistem ayarlari bulunamadi.");
             return null;
         }
 
-        // IK-04: Sunucu zaman dilimine gore zaman alimi
+        // IK-04: sunucu saati
         ZonedDateTime sunucuZamani = ayarlar.sunucuZamaniGetir();
         LocalDate bugun = sunucuZamani.toLocalDate();
 
         if (this.devamKayitlari == null || this.devamKayitlari.isEmpty()) {
-            System.out.println("RED (IK-05): Bugun icin giris kaydi bulunamadan cikis yapilamaz!");
+            System.out.println("Uyari: Giris kaydi olmadan cikis yapilamaz.");
             return null;
         }
 
@@ -210,21 +210,21 @@ public class Calisan extends Kullanici {
             }
         }
 
-        // IK-05: Giris kaydi olmadan cikis engeli
+        // IK-05: giris kaydi olmadan cikis yapilamaz
         if (bugunkuKayit == null) {
-            System.out.println("RED (IK-05): " + bugun + " tarihi icin aktif giris kaydi bulunamadi!");
+            System.out.println("Uyari: " + bugun + " icin aktif giris kaydi bulunamadi.");
             return null;
         }
 
-        // IK-05: Ayni gun ikinci cikis engeli
+        // IK-05: ayni gun ikinci cikis engeli
         if (bugunkuKayit.getCikisZamani() != null) {
-            System.out.println("RED (IK-05): Bugun icin zaten cikis kaydi olusturulmus!");
+            System.out.println("Uyari: Bugun icin zaten cikis yapilmis.");
             return null;
         }
 
-        // IK-03: Konum ve dogruluk siniri kontrolu
+        // IK-03: konum kontrolu
         if (!KonumServisi.konumDogrula(konum, ayarlar)) {
-            System.out.println("RED (IK-03): Cikis konum dogrulamasi basarisiz!");
+            System.out.println("Uyari: Cikis konum dogrulamasi basarisiz.");
             return null;
         }
 
@@ -233,10 +233,10 @@ public class Calisan extends Kullanici {
     }
 
     // Ahmad Alamin - 230404933
-    // IK-05: Verilen tarihte calisana ait giris kaydi bulunup bulunmadigini kontrol eder
+    // IK-05: verilen tarihte calisana ait giris kaydi olup olmadigini kontrol eder
     public boolean gunlukGirisKontrolu(LocalDate tarih) {
         if (tarih == null) {
-            System.out.println("RED (IK-05): Gunluk giris kontrolu icin tarih bos olamaz!");
+            System.out.println("Uyari: Gunluk giris kontrolu icin tarih bos olamaz.");
             return false;
         }
         if (this.devamKayitlari == null || this.devamKayitlari.isEmpty()) {
@@ -250,29 +250,29 @@ public class Calisan extends Kullanici {
         return false;
     }
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public IzinTalebi izinTalebiOlustur(LocalDate baslangic, LocalDate bitis, IzinTuru tur, String aciklama) {
         int hedefYoneticiId = (this.departman != null) ? this.departman.getYoneticiId() : 0;
         return izinTalebiOlustur(baslangic, bitis, tur, aciklama, hedefYoneticiId);
     }
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public IzinTalebi izinTalebiOlustur(int calisanId, LocalDate baslangicTarihi, LocalDate bitisTarihi, IzinTuru izinTuru) {
         if (calisanId != this.kullaniciId) {
-            System.out.println("Yetkisiz İşlem: Başka bir çalışan adına izin talebi oluşturamazsınız!");
+            System.out.println("Uyari: Baska bir calisan adina izin talebi olusturulamaz.");
             return null;
         }
         int hedefYoneticiId = (this.departman != null) ? this.departman.getYoneticiId() : 0;
         return izinTalebiOlustur(baslangicTarihi, bitisTarihi, izinTuru, "", hedefYoneticiId);
     }
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public IzinTalebi izinTalebiOlustur(LocalDate baslangicTarihi, LocalDate bitisTarihi, IzinTuru izinTuru,
                                         String aciklama, int hedefYoneticiId) {
-        // IK-08: Geçersiz tarih aralığı veya çakışan aktif izin talebi kontrolü
+        // IK-08: gecersiz tarih araligi veya cakisan izin kontrolu
         if (baslangicTarihi == null || bitisTarihi == null || bitisTarihi.isBefore(baslangicTarihi)
                 || izinCakismasiVarMi(baslangicTarihi, bitisTarihi)) {
-            System.out.println("Talep Reddedildi: Geçersiz veya çakışan tarih aralığı! (IK-08)");
+            System.out.println("Uyari: Gecersiz veya cakisan izin tarih araligi.");
             return null;
         }
 
@@ -280,7 +280,7 @@ public class Calisan extends Kullanici {
             this.izinTalepleri = new ArrayList<>();
         }
 
-        // IK-04: Oluşturma zamanı Europe/Istanbul sunucu saatine göre alınır.
+        // IK-04: sunucu saati Europe/Istanbul
         LocalDateTime olusturmaZamani = ZonedDateTime.now(ZoneId.of("Europe/Istanbul")).toLocalDateTime();
 
         IzinTalebi yeniTalep = new IzinTalebi(
@@ -302,21 +302,21 @@ public class Calisan extends Kullanici {
 
         Bildirim.bildirimGonder(
                 hedefYoneticiId,
-                "Yeni İzin Talebi",
-                this.ad + " " + this.soyad + " tarafından " + baslangicTarihi + " - " + bitisTarihi +
-                        " tarihleri arası (" + gunSayisi + " gün, " + izinTuru + ") izin talebi oluşturuldu.",
+                "Yeni Izin Talebi",
+                this.ad + " " + this.soyad + " tarafindan " + baslangicTarihi + " - " + bitisTarihi +
+                        " tarihleri arasi (" + gunSayisi + " gun, " + izinTuru + ") izin talebi olusturuldu.",
                 BildirimTuru.IZIN_KARARI,
                 yeniTalep.getIzinId()
         );
 
-        System.out.println("BAŞARILI (IK-08): İzin talebi oluşturuldu (ID: " + yeniTalep.getIzinId() +
-                ", Süre: " + gunSayisi + " gün, Durum: " + yeniTalep.getDurum() + ").");
+        System.out.println("Bilgi: Izin talebi olusturuldu -> ID: " + yeniTalep.getIzinId() +
+                ", Sure: " + gunSayisi + " gun, Durum: " + yeniTalep.getDurum());
         return yeniTalep;
     }
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public boolean izinCakismasiVarMi(LocalDate baslangic, LocalDate bitis) {
-        // IK-08: BEKLIYOR veya ONAYLANDI durumundaki mevcut taleplerle tarih çakışması kontrol edilir.
+        // IK-08: BEKLIYOR veya ONAYLANDI durumundaki izinlerle tarih cakismasi kontrolu
         if (baslangic == null || bitis == null || this.izinTalepleri == null) {
             return false;
         }
@@ -336,10 +336,10 @@ public class Calisan extends Kullanici {
         return false;
     }
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public boolean izinTalebiIptalEt(int izinId) {
         if (this.izinTalepleri == null) {
-            System.out.println("Hata: İzin talebi (ID: " + izinId + ") bulunamadı!");
+            System.out.println("Uyari: Izin talebi (ID: " + izinId + ") bulunamadi.");
             return false;
         }
         for (IzinTalebi talep : this.izinTalepleri) {
@@ -347,15 +347,15 @@ public class Calisan extends Kullanici {
                 return izinTalebiIptalEt(talep);
             }
         }
-        System.out.println("Hata: İzin talebi (ID: " + izinId + ") bulunamadı!");
+        System.out.println("Uyari: Izin talebi (ID: " + izinId + ") bulunamadi.");
         return false;
     }
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public boolean izinTalebiIptalEt(IzinTalebi talep) {
-        // IK-10: Bekleyen izin doğrudan iptal edilebilir; onaylı izin için yönetici/admin onayı gerekir.
+        // IK-10: bekleyen izin direkt iptal edilebilir, onayli izin icin yonetici onayi gerekir
         if (talep == null) {
-            System.out.println("Hata: İptal edilecek izin talebi bulunamadı! (IK-10)");
+            System.out.println("Uyari: Iptal edilecek izin talebi bulunamadi.");
             return false;
         }
         if (talep.getDurum() == IzinDurumu.BEKLIYOR) {
@@ -369,19 +369,19 @@ public class Calisan extends Kullanici {
 
     // Youssef AYOUBI - 230404906
     public boolean gorevDurumuGuncelle(int gorevId, GorevDurumu yeniDurum, String aciklama) {
-        // IK-01: Oturum açmamış veya pasif çalışan işlem yapamaz.
+        // IK-01: pasif veya oturumu kapali calisan islem yapamaz
         if (!this.aktifMi || !this.oturumAcikMi) {
-            System.out.println("HATA (IK-01): Görev durumu güncellemek için aktif hesap ve açık oturum gereklidir.");
+            System.out.println("Uyari: Gorev durumu guncellemek icin once oturum acmalisiniz.");
             return false;
         }
 
-        // IK-12: Çalışan görevi doğrudan TAMAMLANDI yapamaz; inceleme onayı gerekir.
+        // IK-12 kurali: calisan gorevi dogrudan tamamlandi yapamaz
         if (yeniDurum == GorevDurumu.TAMAMLANDI) {
-            System.out.println("HATA (IK-12): Yetkisiz İşlem! Çalışan görevi doğrudan TAMAMLANDI yapamaz, incelemeye göndermelidir.");
+            System.out.println("Uyari: Gorev dogrudan TAMAMLANDI durumuna gecirilemez, inceleme onayi gerekiyor.");
             return false;
         }
 
-        // İlgili görevi çalışanın atanan görevleri arasında bulma
+        // Atanan gorevler arasinda hedef gorevi bul
         Gorev hedefGorev = null;
         for (Gorev g : this.atananGorevler) {
             if (g.getGorevId() == gorevId) {
@@ -391,32 +391,32 @@ public class Calisan extends Kullanici {
         }
 
         if (hedefGorev == null) {
-            System.out.println("HATA (IK-02): Bu görev (ID: " + gorevId + ") size atanmamış veya bulunamadı.");
+            System.out.println("Uyari: Bu gorev (ID: " + gorevId + ") size atanmamis veya bulunamadi.");
             return false;
         }
 
-        // IK-12: Atanan çalışan görevi DEVAM_EDIYOR veya INCELEME_BEKLIYOR durumlarına taşır.
+        // IK-12: calisan gorevi DEVAM_EDIYOR veya INCELEME_BEKLIYOR durumlarina alabilir
         boolean guncellendi = hedefGorev.durumaGecis(yeniDurum, this.kullaniciId, aciklama);
         if (guncellendi && yeniDurum == GorevDurumu.INCELEME_BEKLIYOR) {
             Bildirim.bildirimGonder(
                     hedefGorev.getIncelemeSorumlusuId(),
-                    "Görev İnceleme Bekliyor",
-                    this.ad + " " + this.soyad + " '" + hedefGorev.getBaslik() + "' görevini incelemeye gönderdi.",
+                    "Gorev Inceleme Bekliyor",
+                    this.ad + " " + this.soyad + " '" + hedefGorev.getBaslik() + "' gorevini incelemeye gonderdi.",
                     enums.BildirimTuru.GOREV_INCELEME,
                     hedefGorev.getGorevId()
             );
-            System.out.println("BAŞARILI (IK-12): Görev inceleme için sorumluya iletildi ve bildirim oluşturuldu.");
+            System.out.println("Bilgi: Gorev inceleme icin sorumluya iletildi ve bildirim gonderildi.");
         }
         return guncellendi;
     }
 
     // Mohamad BIRAHJAKLI - 230404939
     public synchronized DevamDuzeltmeTalebi devamDuzeltmeTalebiOlustur(LocalDate tarih, DuzeltmeTuru tur, String gerekce) {
-        // IK-01, IK-02 ve IK-07: Calisan kendi kaydi icin gerekceli bir talep acabilir.
+        // IK-01, IK-02, IK-07: calisan kendi kaydi icin gerekceli duzeltme talebi acabilir
         if (!isAktifMi() || !isOturumAcikMi() || getKullaniciId() <= 0 || tarih == null
                 || tarih.isAfter(LocalDate.now(ZoneId.of("Europe/Istanbul")))
                 || tur == null || gerekce == null || gerekce.isBlank()) {
-            System.out.println("RED (IK-07): Aktif oturum, gecerli tarih ve talep gerekcesi gereklidir.");
+            System.out.println("Uyari: Duzeltme talebi icin aktif oturum, gecerli tarih ve gerekce gerekiyor.");
             return null;
         }
 
@@ -424,12 +424,12 @@ public class Calisan extends Kullanici {
         if ((tur == DuzeltmeTuru.EKSIK_GIRIS && kayit != null && kayit.getGirisZamani() != null)
                 || (tur == DuzeltmeTuru.EKSIK_CIKIS
                 && (kayit == null || kayit.getGirisZamani() == null || kayit.getCikisZamani() != null))) {
-            System.out.println("RED (IK-07): Mevcut devam kaydi talep turuyle uyusmuyor.");
+            System.out.println("Uyari: Mevcut devam kaydi secilen talep turuyle uyusmuyor.");
             return null;
         }
         if (duzeltmeTalepleri.stream().anyMatch(talep -> tarih.equals(talep.getTarih())
                 && tur == talep.getDuzeltmeTuru() && talep.getDurum() == TalepDurumu.BEKLIYOR)) {
-            System.out.println("RED (IK-07): Bu gun ve tur icin bekleyen bir talep var.");
+            System.out.println("Uyari: Bu tarih ve tur icin zaten bekleyen bir talep var.");
             return null;
         }
 

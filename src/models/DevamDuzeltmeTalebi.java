@@ -90,14 +90,14 @@ public final class DevamDuzeltmeTalebi {
                          LocalDateTime yeniCikis, String neden, IslemGecmisiLog sonucLogu,
                          SistemAyarlari ayarlar) {
         synchronized (calisan) {
-            // IK-01, IK-02 ve IK-07: Yalnizca yetkili yonetici gerekceli karar verebilir.
+            // IK-01, IK-02, IK-07: sadece yetkili yonetici gerekceli karar verebilir
             if (yonetici == null || !yonetici.devamKarariYetkisiVarMi()) {
-                System.out.println("RED (IK-07): Yetkili Sistem Yoneticisi oturumu gereklidir.");
+                System.out.println("Uyari: Bu islem icin yetkili Sistem Yoneticisi oturumu gerekiyor.");
                 return false;
             }
             if (durum != TalepDurumu.BEKLIYOR || calisan.getKullaniciId() != calisanId || ayarlar == null
                     || neden == null || neden.isBlank()) {
-                System.out.println("RED (IK-07): Bekleyen talep, calisan, ayarlar ve karar gerekcesi gereklidir.");
+                System.out.println("Uyari: Bekleyen talep, calisan, sistem ayarlari ve karar gerekcesi zorunludur.");
                 return false;
             }
 
@@ -108,7 +108,7 @@ public final class DevamDuzeltmeTalebi {
                 if (!duzeltmeGecerliMi(kayit, yeniGiris, yeniCikis, simdi)
                         || (devamKaydiId != 0 && (kayit == null || kayit.getKayitId() != devamKaydiId))
                         || (yeniGiris != null && ayarlar.getMesaiBaslangic() == null)) {
-                    System.out.println("RED (IK-07): Duzeltilen tarih veya saatler talep turune uygun degil.");
+                    System.out.println("Uyari: Girilen tarih veya saatler talep turuyle uyusmuyor.");
                     return false;
                 }
                 boolean yeniKayit = kayit == null;

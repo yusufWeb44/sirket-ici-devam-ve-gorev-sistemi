@@ -1,7 +1,7 @@
-// Ortak Sınıf (Shared Class) - Görev Dağılımı:
-// - Youssef AYOUBI - 230404906 (Sınıf yapısı, kullaniciHesabiOlustur, kullaniciDurumGuncelle, rolAta, departmanOlustur, sistemAyarlariniGuncelle)
+// Ortak Sinif - Gorev Dagilimi:
+// - Youssef AYOUBI - 230404906 (Sinif yapisi, kullaniciHesabiOlustur, kullaniciDurumGuncelle, rolAta, departmanOlustur, sistemAyarlariniGuncelle)
 // - Mohamad BIRAHJAKLI - 230404939 (devamDuzeltmeTalebiDegerlendir, erkenGirisOnayla)
-// - Adnan Derviş - 230404935 (yoneticiIzinTalebiDegerlendir)
+// - Adnan Dervis - 230404935 (yoneticiIzinTalebiDegerlendir, onayliIzinIptalOnayla)
 package models;
 
 import enums.BildirimTuru;
@@ -40,53 +40,53 @@ public class SistemYoneticisi extends Kullanici {
 
     // Youssef AYOUBI - 230404906
     public boolean kullaniciHesabiOlustur(Kullanici kullanici) {
-        // IK-01 & IK-02: Sistem yöneticisi aktif ve oturum açmış olmalıdır.
+        // IK-01 & IK-02: aktif Sistem Yoneticisi oturumu gereklidir
         if (!this.aktifMi || !this.oturumAcikMi || this.rol != Rol.SISTEM_YONETICISI) {
-            System.out.println("HATA (IK-01 / IK-02): Kullanıcı hesabı oluşturmak için yetkili Sistem Yöneticisi oturumu gereklidir.");
+            System.out.println("Uyari: Kullanici hesabi olusturmak icin yetkili Sistem Yoneticisi oturumu gerekir.");
             return false;
         }
         if (kullanici == null || kullanici.getKullaniciAdi() == null || kullanici.getKullaniciAdi().isBlank()) {
-            System.out.println("HATA: Geçersiz kullanıcı bilgisi! Kullanıcı adı boş olamaz.");
+            System.out.println("Uyari: Gecersiz kullanici bilgisi, kullanici adi bos olamaz.");
             return false;
         }
-        // IK-04: Oluşturma tarihi sunucu saatine (Europe/Istanbul) göre atanır.
+        // IK-04: olusturma tarihi Europe/Istanbul saatine gore atanir
         if (kullanici.getOlusturmaTarihi() == null) {
             kullanici.setOlusturmaTarihi(LocalDateTime.now(ZoneId.of("Europe/Istanbul")));
         }
-        System.out.println("BAŞARILI (IK-02): Kullanıcı hesabı oluşturuldu -> " +
-                kullanici.getAd() + " " + kullanici.getSoyad() + " | Rol: " + kullanici.getRol());
+        System.out.println("Bilgi: Kullanici hesabi olusturuldu -> " +
+                kullanici.getAd() + " " + kullanici.getSoyad() + " (" + kullanici.getRol() + ")");
         return true;
     }
 
     // Youssef AYOUBI - 230404906
     public boolean kullaniciDurumGuncelle(Kullanici kullanici, boolean aktifMi) {
-        // IK-01 & IK-02: Hesap aktif/pasif durumu yalnızca Sistem Yöneticisi tarafından değiştirilebilir.
+        // IK-01 & IK-02: hesap durumu sadece Sistem Yoneticisi tarafindan degistirilebilir
         if (!this.aktifMi || !this.oturumAcikMi || this.rol != Rol.SISTEM_YONETICISI) {
-            System.out.println("HATA (IK-01 / IK-02): Yetkisiz işlem! Hesap durumunu yalnızca Sistem Yöneticisi güncelleyebilir.");
+            System.out.println("Uyari: Hesap durumunu sadece Sistem Yoneticisi guncelleyebilir.");
             return false;
         }
         if (kullanici == null) {
-            System.out.println("HATA: Hedef kullanıcı bulunamadı.");
+            System.out.println("Uyari: Hedef kullanici bulunamadi.");
             return false;
         }
         kullanici.setAktifMi(aktifMi);
         if (!aktifMi) {
             kullanici.setOturumAcikMi(false);
         }
-        System.out.println("BAŞARILI (IK-01): Kullanıcı (" + kullanici.getKullaniciAdi() +
-                ") durumu güncellendi -> " + (aktifMi ? "AKTİF" : "PASİF"));
+        System.out.println("Bilgi: Kullanici durumu guncellendi -> " + kullanici.getKullaniciAdi() +
+                " (" + (aktifMi ? "AKTIF" : "PASIF") + ")");
         return true;
     }
 
     // Youssef AYOUBI - 230404906
     public boolean rolAta(Kullanici kullanici, Rol yeniRol, IslemGecmisiLog log) {
-        // IK-02: Rol değişikliği yetkisi Sistem Yöneticisine aittir.
+        // IK-02: rol degistirme yetkisi Sistem Yoneticisine aittir
         if (!this.aktifMi || !this.oturumAcikMi || this.rol != Rol.SISTEM_YONETICISI) {
-            System.out.println("HATA (IK-02): Rol atama işlemi için Sistem Yöneticisi yetkisi gereklidir.");
+            System.out.println("Uyari: Rol atama islemi icin Sistem Yoneticisi yetkisi gerekir.");
             return false;
         }
         if (kullanici == null || yeniRol == null) {
-            System.out.println("HATA: Geçersiz kullanıcı veya rol bilgisi.");
+            System.out.println("Uyari: Gecersiz kullanici veya rol bilgisi.");
             return false;
         }
         Rol eskiRol = kullanici.getRol();
@@ -98,46 +98,46 @@ public class SistemYoneticisi extends Kullanici {
                 kullanici.getKullaniciId(),
                 String.valueOf(eskiRol),
                 String.valueOf(yeniRol),
-                "Sistem yöneticisi tarafından rol güncellendi."
+                "Sistem yoneticisi tarafindan rol guncellendi."
         );
-        System.out.println("BAŞARILI (IK-02): Kullanıcı (" + kullanici.getKullaniciAdi() +
-                ") rolü değiştirildi: " + eskiRol + " -> " + yeniRol);
+        System.out.println("Bilgi: Kullanici rolu degistirildi -> " + kullanici.getKullaniciAdi() +
+                " (" + eskiRol + " -> " + yeniRol + ")");
         return true;
     }
 
     // Youssef AYOUBI - 230404906
     public boolean departmanOlustur(Departman departman) {
-        // IK-02: Departman oluşturma yetkisi Sistem Yöneticisine aittir.
+        // IK-02: departman olusturma yetkisi Sistem Yoneticisine aittir
         if (!this.aktifMi || !this.oturumAcikMi || this.rol != Rol.SISTEM_YONETICISI) {
-            System.out.println("HATA (IK-02): Departman oluşturmak için Sistem Yöneticisi yetkisi gereklidir.");
+            System.out.println("Uyari: Departman olusturmak icin Sistem Yoneticisi yetkisi gerekir.");
             return false;
         }
         if (departman == null || departman.getDepartmanAdi() == null || departman.getDepartmanAdi().isBlank()) {
-            System.out.println("HATA: Departman adı boş olamaz.");
+            System.out.println("Uyari: Departman adi bos olamaz.");
             return false;
         }
         if (departman.getOlusturmaTarihi() == null) {
             departman.setOlusturmaTarihi(LocalDate.now(ZoneId.of("Europe/Istanbul")));
         }
         departman.setAktifMi(true);
-        System.out.println("BAŞARILI (IK-02): Yeni departman oluşturuldu -> " + departman.getDepartmanAdi() +
+        System.out.println("Bilgi: Yeni departman olusturuldu -> " + departman.getDepartmanAdi() +
                 " (ID: " + departman.getDepartmanId() + ")");
         return true;
     }
 
     // Youssef AYOUBI - 230404906
     public boolean sistemAyarlariniGuncelle(SistemAyarlari ayarlar) {
-        // IK-02: Sistem parametrelerini güncelleme yetkisi Sistem Yöneticisine aittir.
+        // IK-02: sistem ayarlarini guncelleme yetkisi Sistem Yoneticisine aittir
         if (!this.aktifMi || !this.oturumAcikMi || this.rol != Rol.SISTEM_YONETICISI) {
-            System.out.println("HATA (IK-02): Sistem ayarlarını güncellemek için Sistem Yöneticisi yetkisi gereklidir.");
+            System.out.println("Uyari: Sistem ayarlarini guncellemek icin Sistem Yoneticisi yetkisi gerekir.");
             return false;
         }
         if (ayarlar == null) {
-            System.out.println("HATA: Geçersiz sistem ayarları nesnesi.");
+            System.out.println("Uyari: Gecersiz sistem ayarlari nesnesi.");
             return false;
         }
-        System.out.println("BAŞARILI (IK-02): Sistem ayarları güncellendi (Kabul Yarıçapı: " +
-                ayarlar.getKabulYaricapiMetre() + "m, Zaman Dilimi: " + ayarlar.getZamanDilimi() + ").");
+        System.out.println("Bilgi: Sistem ayarlari guncellendi -> Kabul yaricapi: " +
+                ayarlar.getKabulYaricapiMetre() + "m, Zaman dilimi: " + ayarlar.getZamanDilimi());
         this.devamAyarlari = ayarlar;
         return true;
     }
@@ -154,9 +154,9 @@ public class SistemYoneticisi extends Kullanici {
     public boolean devamDuzeltmeTalebiDegerlendir(DevamDuzeltmeTalebi talep, boolean onay,
                                                   LocalDateTime duzeltilmisGiris, LocalDateTime duzeltilmisCikis,
                                                   String gerekce, IslemGecmisiLog log, SistemAyarlari ayarlar) {
-        // IK-01, IK-02 ve IK-07: Duzeltmeye yalnizca aktif Sistem Yoneticisi karar verir.
+        // IK-01, IK-02, IK-07: duzeltme talebine sadece aktif Sistem Yoneticisi karar verir
         if (talep == null) {
-            System.out.println("RED (IK-07): Duzeltme talebi gereklidir.");
+            System.out.println("Uyari: Duzeltme talebi bulunamadi.");
             return false;
         }
         return talep.karariUygula(this, onay, duzeltilmisGiris, duzeltilmisCikis,
@@ -165,10 +165,10 @@ public class SistemYoneticisi extends Kullanici {
 
     // Mohamad BIRAHJAKLI - 230404939
     public boolean erkenGirisOnayla(DevamKaydi kayit, boolean onay) {
-        // IK-13: Sadece erken giris aday puani yonetici karariyla kesinlesir.
+        // IK-13: erken giris aday puani yonetici karariyla kesinlesir
         if (!devamKarariYetkisiVarMi() || kayit == null || kayit.getDurum() != DevamDurumu.ERKEN
                 || kayit.getAdayYesilPuan() <= 0) {
-            System.out.println("RED (IK-13): Yetkili oturum ve erken giris aday puani gereklidir.");
+            System.out.println("Uyari: Yetkili oturum ve erken giris aday puani gereklidir.");
             return false;
         }
         int oncekiPuan = kayit.getKesinlesenYesilPuan();
@@ -187,73 +187,73 @@ public class SistemYoneticisi extends Kullanici {
         return isAktifMi() && isOturumAcikMi() && getRol() == Rol.SISTEM_YONETICISI && getKullaniciId() > 0;
     }
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public boolean yoneticiIzinTalebiDegerlendir(IzinTalebi talep, boolean onaylandiMi, String retGerekcesi) {
         if (talep == null) {
-            System.out.println("Hata: Değerlendirilecek izin talebi bulunamadı!");
+            System.out.println("Uyari: Degerlendirilecek izin talebi bulunamadi.");
             return false;
         }
 
-        // IK-09: Kendi izin talebini değerlendirme engeli
+        // IK-09: kendi izin talebini onaylama engeli
         if (talep.getCalisanId() == this.kullaniciId) {
-            System.out.println("Yetkisiz İşlem: Kendi izin talebinizi onaylayamazsınız! (IK-09)");
+            System.out.println("Uyari: Kendi izin talebinizi onaylayamazsiniz.");
             return false;
         }
 
-        // IK-10: Yalnızca BEKLIYOR durumundaki talepler değerlendirilebilir.
+        // IK-10: sadece BEKLIYOR durumundaki talepler degerlendirilebilir
         if (talep.getDurum() != IzinDurumu.BEKLIYOR) {
-            System.out.println("Hata: Yalnızca BEKLIYOR durumundaki izin talepleri değerlendirilebilir! Mevcut durum: "
-                    + talep.getDurum() + " (IK-10)");
+            System.out.println("Uyari: Sadece BEKLIYOR durumundaki talepler degerlendirilebilir. Mevcut: "
+                    + talep.getDurum());
             return false;
         }
 
-        // IK-04: Sunucu zamanı Europe/Istanbul olarak alınır.
+        // IK-04: sunucu saati Europe/Istanbul
         ZonedDateTime kararZamani = ZonedDateTime.now(ZoneId.of("Europe/Istanbul"));
 
-        // IK-09: Sistem yöneticisi departman yöneticisinin yönlendirilen izin talebini onaylar veya gerekçeli reddeder.
+        // IK-09: sistem yoneticisi yonlendirilen talebi onaylar veya gerekceli reddeder
         if (onaylandiMi) {
             talep.onayla(this.kullaniciId);
             if (talep.getDurum() == IzinDurumu.ONAYLANDI) {
-                System.out.println("BAŞARILI (IK-09): Yönetici izin talebi (ID: " + talep.getIzinId() +
-                        ") Sistem Yöneticisi tarafından onaylandı (" + kararZamani.toLocalDateTime() + ").");
+                System.out.println("Bilgi: Yonetici izin talebi onaylandi -> ID: " + talep.getIzinId() +
+                        " (" + kararZamani.toLocalDateTime() + ")");
                 return true;
             }
             return false;
         } else {
             if (retGerekcesi == null || retGerekcesi.trim().isEmpty()) {
-                System.out.println("Hata: Ret için gerekçe belirtilmesi zorunludur! (IK-09)");
+                System.out.println("Uyari: Ret icin gerekce belirtilmelidir.");
                 return false;
             }
             return talep.reddet(this.kullaniciId, retGerekcesi);
         }
     }
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public boolean onayliIzinIptalOnayla(IzinTalebi talep, String iptalGerekcesi) {
         if (talep == null) {
-            System.out.println("Hata: İptal onayı verilecek izin talebi bulunamadı! (IK-10)");
+            System.out.println("Uyari: Iptal onayi verilecek izin talebi bulunamadi.");
             return false;
         }
 
-        // IK-10: Yalnızca ONAYLANDI durumundaki izin talepleri için resmi iptal onayı verilebilir.
+        // IK-10: sadece ONAYLANDI durumundaki izinler icin iptal onayi verilebilir
         if (talep.getDurum() != IzinDurumu.ONAYLANDI) {
-            System.out.println("Hata: Yalnızca ONAYLANDI durumundaki izin talepleri için yönetici iptal onayı verilebilir! Mevcut durum: "
-                    + talep.getDurum() + " (IK-10)");
+            System.out.println("Uyari: Sadece ONAYLANDI durumundaki talepler iptal onayina uygundur. Mevcut: "
+                    + talep.getDurum());
             return false;
         }
 
         boolean iptalBasarili = talep.iptalEt(this.kullaniciId, true);
         if (iptalBasarili) {
-            // IK-04: İşlem zamanı Europe/Istanbul sunucu saatine göre alınır.
+            // IK-04: Islem zamani Europe/Istanbul sunucu saatine gore alinir.
             ZonedDateTime islemZamani = ZonedDateTime.now(ZoneId.of("Europe/Istanbul"));
             String gerekceMetni = (iptalGerekcesi != null && !iptalGerekcesi.trim().isEmpty())
                     ? iptalGerekcesi.trim()
-                    : "Sistem yöneticisi onayı ile iptal edildi";
+                    : "Sistem yoneticisi onayi ile iptal edildi";
 
             Bildirim.bildirimGonder(
                     talep.getCalisanId(),
-                    "İzin İptal Onayı",
-                    "Onaylanmış izin talebiniz (ID: " + talep.getIzinId() + ") Sistem Yöneticisi tarafından iptal edildi. Gerekçe: "
+                    "Izin Iptal Onayi",
+                    "Onaylanmis izin talebiniz (ID: " + talep.getIzinId() + ") Sistem Yoneticisi tarafindan iptal edildi. Gerekce: "
                             + gerekceMetni + " (" + islemZamani.toLocalDateTime() + ")",
                     BildirimTuru.IZIN_KARARI,
                     talep.getIzinId()

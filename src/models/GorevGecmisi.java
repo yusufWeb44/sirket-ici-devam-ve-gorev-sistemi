@@ -88,7 +88,7 @@ public class GorevGecmisi {
 
     public static GorevGecmisi kayitOlustur(int gorevId, GorevDurumu oncekiDurum, GorevDurumu yeniDurum,
         int islemYapanId, String yorum) {
-        // IK-04: Görev geçmişi kaydı için Europe/Istanbul sunucu saati kullanılır.
+        // IK-04: kayit zamani Europe/Istanbul saatine gore alinir
         LocalDateTime simdi = LocalDateTime.now(ZoneId.of("Europe/Istanbul"));
         GorevGecmisi yeniKayit = new GorevGecmisi(
             idSayaci++,
@@ -99,9 +99,9 @@ public class GorevGecmisi {
             simdi,
             yorum
         );
-        System.out.println("GÖREV GEÇMİŞİ LOGLANDI -> Görev ID: " + gorevId +
-            " | Geçiş: " + oncekiDurum + " -> " + yeniDurum +
-            " | İşlem Yapan ID: " + islemYapanId + " | Yorum: " + yorum);
+        System.out.println("Gorev gecmisi -> Gorev ID: " + gorevId +
+            " | Gecis: " + oncekiDurum + " -> " + yeniDurum +
+            " | Yapan ID: " + islemYapanId + " | Yorum: " + yorum);
         return yeniKayit;
     }
 }

@@ -98,11 +98,11 @@ public class Bildirim {
 
     public void okunduOlarakIsaretle() {
         this.okunduMu = true;
-        System.out.println("BİLDİRİM OKUNDU (ID: " + this.bildirimId + "): " + this.baslik);
+        System.out.println("Bildirim okundu (ID: " + this.bildirimId + "): " + this.baslik);
     }
 
-    public static Bildirim bildirimGonder(int aliciKullaniciId, String baslik, String mesaj,BildirimTuru tur, int ilgiliKayitId) {
-        // IK-04: Bildirim zamanı için Europe/Istanbul sunucu saati kullanılır.
+    public static Bildirim bildirimGonder(int aliciKullaniciId, String baslik, String mesaj, BildirimTuru tur, int ilgiliKayitId) {
+        // IK-04: bildirim saati Europe/Istanbul saatine gore alinir
         LocalDateTime simdi = LocalDateTime.now(ZoneId.of("Europe/Istanbul"));
         Bildirim yeniBildirim = new Bildirim(
             idSayaci++,
@@ -114,7 +114,7 @@ public class Bildirim {
             false,
             simdi
         );
-        System.out.println("BİLDİRİM GÖNDERİLDİ -> Alici ID: " + aliciKullaniciId +" | Tür: " + tur + " | Başlik: " + baslik + " | Mesaj: " + mesaj);
+        System.out.println("Bildirim gonderildi -> Alici ID: " + aliciKullaniciId + " | Tur: " + tur + " | Baslik: " + baslik + " | Mesaj: " + mesaj);
         return yeniBildirim;
     }
 }

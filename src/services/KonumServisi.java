@@ -8,10 +8,10 @@ public class KonumServisi {
 
     private static final double DUNYA_YARICAPI_METRE = 6371000.0;
 
-    // IK-03: Haversine formulu ile iki konum arasindaki mesafeyi (metre) hesaplar
+    // IK-03: iki konum arasi mesafe hesabi (Haversine)
     public static double mesafeHesapla(KonumBilgisi konum1, KonumBilgisi konum2) {
         if (konum1 == null || konum2 == null || !konum1.gecerliKoordinatMi() || !konum2.gecerliKoordinatMi()) {
-            System.out.println("RED (IK-03): Mesafe hesabi icin gecersiz konum bilgisi!");
+            System.out.println("Uyari: Mesafe hesabi icin konum bilgisi gecersiz.");
             return -1.0;
         }
 
@@ -28,19 +28,19 @@ public class KonumServisi {
         return DUNYA_YARICAPI_METRE * c;
     }
 
-    // IK-03: Anlik konum, dogruluk payi ve sirket yaricapi kontrolu
+    // IK-03: anlik konum, dogruluk payi ve sirket yaricapi kontrolu
     public static boolean konumDogrula(KonumBilgisi anlikKonum, SistemAyarlari ayarlar) {
         if (anlikKonum == null || !anlikKonum.gecerliKoordinatMi()) {
-            System.out.println("RED (IK-03): Konum alinamadi veya koordinat/dogruluk bilgisi gecersiz!");
+            System.out.println("Uyari: Konum alinamadi veya koordinat bilgisi gecersiz.");
             return false;
         }
 
         if (ayarlar == null) {
-            System.out.println("RED (IK-03): Sistem ayarlari bulunamadi!");
+            System.out.println("Uyari: Sistem ayarlari bulunamadi.");
             return false;
         }
 
-        // Not: SistemAyarlari geldiginde getter isimlerini birebir eslestirecegiz
+        // sirket merkez koordinatlarini ayarlar nesnesinden al
         KonumBilgisi sirketKonumu = new KonumBilgisi(
                 ayarlar.getSirketEnlem(),
                 ayarlar.getSirketBoylam(),
@@ -57,9 +57,9 @@ public class KonumServisi {
         double izinVerilenYaricap = ayarlar.getKabulYaricapiMetre();
 
         if (toplamUzaklikVeBelirsizlik > izinVerilenYaricap) {
-            System.out.println("RED (IK-03): Konum sirket siniri disinda! Toplam (mesafe + belirsizlik): "
+            System.out.println("Uyari: Konum sirket siniri disinda (mesafe + pay: "
                     + String.format("%.2f", toplamUzaklikVeBelirsizlik)
-                    + "m / Izin verilen yaricap: " + izinVerilenYaricap + "m");
+                    + "m, limit: " + izinVerilenYaricap + "m)");
             return false;
         }
 

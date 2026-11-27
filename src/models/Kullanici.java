@@ -136,62 +136,59 @@ public abstract class Kullanici {
         this.oturumAcikMi = oturumAcikMi;
     }
 
+    // IK-01: kullanici adi, sifre ve aktiflik kontrolu
     public boolean girisYap(String kullaniciAdi, String sifre) {
-        // IK-01: Pasife alınmış hesaplar sisteme giriş yapamaz.
         if (!this.aktifMi) {
-            System.out.println("HATA (IK-01): Hesap pasif durumda olduğu için giriş reddedildi! Kullanıcı: " + this.kullaniciAdi);
+            System.out.println("Uyari: Hesap pasif durumda oldugu icin giris yapilamadi -> " + this.kullaniciAdi);
             return false;
         }
-
-        // IK-01: Kullanıcı, geçerli kullanıcı adı ve şifreyle oturum açmadan işlem yapamaz.
         if (kullaniciAdi == null || sifre == null ||
                 !this.kullaniciAdi.equals(kullaniciAdi) || !this.sifreHash.equals(sifre)) {
-            System.out.println("HATA (IK-01): Hatalı kullanıcı adı veya şifre! Giriş reddedildi.");
+            System.out.println("Uyari: Kullanici adi veya sifre hatali.");
             return false;
         }
-
-        // IK-04: Sunucu zamanı (Europe/Istanbul) kullanılır.
+        // IK-04: sunucu saati Europe/Istanbul
         this.sonGirisTarihi = LocalDateTime.now(ZoneId.of("Europe/Istanbul"));
         this.oturumAcikMi = true;
-        System.out.println("BAŞARILI (IK-01): Oturum açıldı -> " + this.ad + " " + this.soyad + " (" + this.rol + ")");
+        System.out.println("Bilgi: Oturum acildi -> " + this.ad + " " + this.soyad + " (" + this.rol + ")");
         return true;
     }
 
+    // IK-01: oturumu kapat
     public void cikisYap() {
-        // IK-01: Oturum sonlandırma
         this.oturumAcikMi = false;
-        System.out.println("BAŞARILI: Oturum kapatıldı -> " + this.ad + " " + this.soyad);
+        System.out.println("Bilgi: Oturum kapatildi -> " + this.ad + " " + this.soyad);
     }
 
+    // IK-01, IK-02: sifre degistirmek icin acik oturum ve dogru eski sifre gerekir
     public boolean sifreGuncelle(String eskiSifre, String yeniSifre) {
-        // IK-01 & IK-02: Oturum ve hesap aktiflik kontrolü
         if (!this.aktifMi || !this.oturumAcikMi) {
-            System.out.println("HATA (IK-01): Şifre güncellemek için aktif hesap ve açık oturum gereklidir.");
+            System.out.println("Uyari: Sifre guncellemek icin once oturum acmalisiniz.");
             return false;
         }
         if (eskiSifre == null || !this.sifreHash.equals(eskiSifre)) {
-            System.out.println("HATA (IK-02): Mevcut şifre hatalı! Şifre güncellenemedi.");
+            System.out.println("Uyari: Mevcut sifre yanlis.");
             return false;
         }
         if (yeniSifre == null || yeniSifre.trim().length() < 4) {
-            System.out.println("HATA: Yeni şifre en az 4 karakter olmalıdır.");
+            System.out.println("Uyari: Yeni sifre en az 4 karakter olmali.");
             return false;
         }
         this.sifreHash = yeniSifre;
-        System.out.println("BAŞARILI (IK-02): Şifre başarıyla güncellendi -> " + this.kullaniciAdi);
+        System.out.println("Bilgi: Sifre guncellendi -> " + this.kullaniciAdi);
         return true;
     }
 
+    // IK-02: sadece oturum aciksa kendi profilini gorebilir
     public String profilBilgisiGetir() {
-        // IK-02: Kullanıcı kendi profil bilgilerini görüntüler.
         if (!this.oturumAcikMi) {
-            System.out.println("HATA (IK-01): Profil bilgisi görüntülemek için oturum açılmalıdır.");
+            System.out.println("Uyari: Profili gormek icin oturum acik olmali.");
             return null;
         }
-        return "Kullanıcı ID: " + kullaniciId +
+        return "Kullanici ID: " + kullaniciId +
             " | Ad Soyad: " + ad + " " + soyad +
-            " | Kullanıcı Adı: " + kullaniciAdi +
+            " | Kullanici Adi: " + kullaniciAdi +
             " | Rol: " + rol +
-            " | Aktif: " + (aktifMi ? "Evet" : "Hayır");
+            " | Aktif: " + (aktifMi ? "Evet" : "Hayir");
     }
 }

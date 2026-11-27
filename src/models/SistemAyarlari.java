@@ -164,16 +164,16 @@ public class SistemAyarlari {
 
     public boolean calismaGunuMu(LocalDate tarih) {
         if (tarih == null) {
-            System.out.println("RED (IK-06): Tarih degeri bos (null) olamaz!");
+            System.out.println("Uyari: Tarih bos olamaz.");
             return false;
         }
         if (calismaGunleri == null || calismaGunleri.isEmpty()) {
-            System.out.println("RED (IK-06): Calisma gunleri tanimlanmamis!");
+            System.out.println("Uyari: Calisma gunleri tanimli degil.");
             return false;
         }
         boolean aktifGun = calismaGunleri.contains(tarih.getDayOfWeek());
         if (!aktifGun) {
-            System.out.println("RED (IK-06): " + tarih + " (" + tarih.getDayOfWeek() + ") calisma gunu degildir!");
+            System.out.println("Bilgi: " + tarih + " (" + tarih.getDayOfWeek() + ") calisma gunu degil.");
         }
         return aktifGun;
     }
@@ -183,7 +183,7 @@ public class SistemAyarlari {
         try {
             return ZonedDateTime.now(ZoneId.of(bolge));
         } catch (Exception e) {
-            System.out.println("RED (IK-04): Gecersiz zaman dilimi (" + bolge + "), Europe/Istanbul kullaniliyor!");
+            System.out.println("Uyari: Gecersiz zaman dilimi (" + bolge + "), Europe/Istanbul kullaniliyor.");
             return ZonedDateTime.now(ZoneId.of("Europe/Istanbul"));
         }
     }

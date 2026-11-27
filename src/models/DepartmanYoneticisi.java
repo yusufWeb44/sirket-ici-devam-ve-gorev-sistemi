@@ -1,6 +1,6 @@
-// Ortak Sınıf (Shared Class) - Görev Dağılımı:
-// - Youssef AYOUBI - 230404906 (Sınıf yapısı, gorevAta, goreviInceleVeOnayla, departmanRaporuGetir)
-// - Adnan Derviş - 230404935 (izinTalebiDegerlendir)
+// Ortak Sinif - Gorev Dagilimi:
+// - Youssef AYOUBI - 230404906 (Sinif yapisi, gorevAta, goreviInceleVeOnayla, departmanRaporuGetir)
+// - Adnan Dervis - 230404935 (izinTalebiDegerlendir)
 package models;
 
 import enums.IzinDurumu;
@@ -37,20 +37,20 @@ public class DepartmanYoneticisi extends Calisan {
         this.yonetilenDepartmanId = yonetilenDepartmanId;
     }
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public boolean izinTalebiDegerlendir(IzinTalebi talep, boolean onaylandiMi, String retGerekcesi) {
         if (talep == null) {
-            System.out.println("Hata: Değerlendirilecek izin talebi bulunamadı!");
+            System.out.println("Uyari: Degerlendirilecek izin talebi bulunamadi.");
             return false;
         }
 
-        // IK-09: Departman yöneticisi kendi izin talebini onaylayamaz veya değerlendiremez.
+        // IK-09: Departman yoneticisi kendi izin talebini onaylayamaz veya degerlendiremez
         if (talep.getCalisanId() == this.kullaniciId) {
-            System.out.println("Yetkisiz İşlem: Kendi izin talebinizi onaylayamazsınız! (IK-09) - Talep Sistem Yöneticisine yönlendirilmelidir.");
+            System.out.println("Uyari: Kendi izin talebinizi onaylayamazsiniz, talep Sistem Yoneticisine gitmeli.");
             return false;
         }
 
-        // Departman ve çalışan listesi tanımlıysa, talebin bu yöneticinin departmanındaki çalışana ait olduğunu doğrula
+        // Departman ve calisan listesi tanimliysa talebin bu departmandaki bir calisana ait oldugunu dogrula
         if (this.departman != null && this.departman.getCalisanlar() != null && !this.departman.getCalisanlar().isEmpty()) {
             boolean departmanCalisaniMi = false;
             for (Calisan c : this.departman.getCalisanlar()) {
@@ -60,77 +60,77 @@ public class DepartmanYoneticisi extends Calisan {
                 }
             }
             if (!departmanCalisaniMi) {
-                System.out.println("Yetkisiz İşlem: Bu izin talebi sizin yönettiğiniz departmana ait bir çalışana ait değil! (IK-02)");
+                System.out.println("Uyari: Bu izin talebi sizin departmaninizdaki bir calisana ait degil.");
                 return false;
             }
         }
 
-        // IK-10: Yalnızca BEKLIYOR durumundaki talepler değerlendirilebilir.
+        // IK-10: Sadece BEKLIYOR durumundaki talepler degerlendirilebilir
         if (talep.getDurum() != IzinDurumu.BEKLIYOR) {
-            System.out.println("Hata: Yalnızca BEKLIYOR durumundaki izin talepleri değerlendirilebilir! Mevcut durum: "
-                    + talep.getDurum() + " (IK-10)");
+            System.out.println("Uyari: Sadece BEKLIYOR durumundaki talepler degerlendirilebilir. Mevcut: "
+                    + talep.getDurum());
             return false;
         }
 
-        // IK-04: Sunucu zamanı Europe/Istanbul olarak alınır.
+        // IK-04: Sunucu zamani Europe/Istanbul saatine gore alinir
         ZonedDateTime degerlendirmeZamani = ZonedDateTime.now(ZoneId.of("Europe/Istanbul"));
 
         if (onaylandiMi) {
             talep.onayla(this.kullaniciId);
             if (talep.getDurum() == IzinDurumu.ONAYLANDI) {
-                System.out.println("BAŞARILI (IK-09): İzin talebi (ID: " + talep.getIzinId() +
-                        ") departman yöneticisi tarafından onaylandı (" + degerlendirmeZamani.toLocalDateTime() + ").");
+                System.out.println("Bilgi: Izin talebi onaylandi -> ID: " + talep.getIzinId() +
+                        " (" + degerlendirmeZamani.toLocalDateTime() + ")");
                 return true;
             }
             return false;
         } else {
-            // IK-09: Ret işlemi için gerekçe zorunludur.
+            // IK-09: Ret isleminde gerekce zorunlu
             if (retGerekcesi == null || retGerekcesi.trim().isEmpty()) {
-                System.out.println("Hata: Ret için gerekçe belirtilmesi zorunludur! (IK-09)");
+                System.out.println("Uyari: Ret islemi icin gerekce belirtilmelidir.");
                 return false;
             }
             return talep.reddet(this.kullaniciId, retGerekcesi);
         }
     }
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public boolean izinTalebiOnayla(IzinTalebi talep) {
         return izinTalebiDegerlendir(talep, true, null);
     }
 
-    // Adnan Derviş 230404935
+    // Adnan Dervis - 230404935
     public boolean izinTalebiReddet(IzinTalebi talep, String retGerekcesi) {
         return izinTalebiDegerlendir(talep, false, retGerekcesi);
     }
 
     // Youssef AYOUBI - 230404906
     public boolean gorevAta(Gorev gorev, Calisan hedefCalisan) {
-        // IK-01: Oturum ve hesap aktiflik kontrolü
+        // IK-01: Aktif yonetici oturumu kontrolu
         if (!this.aktifMi || !this.oturumAcikMi) {
-            System.out.println("HATA (IK-01): Görev atamak için aktif yönetici oturumu gereklidir.");
+            System.out.println("Uyari: Gorev atamak icin aktif yonetici oturumu gerekir.");
             return false;
         }
         if (gorev == null || hedefCalisan == null) {
-            System.out.println("HATA: Geçersiz görev veya çalışan bilgisi.");
+            System.out.println("Uyari: Gecersiz gorev veya calisan bilgisi.");
             return false;
         }
 
-        // IK-11: Yönetici yalnızca kendi departmanına ait görevi yönetebilir.
+        // IK-11: Yonetici yalnizca kendi departmanindaki gorevi atayabilir
         if (gorev.getHedefDepartmanId() != this.yonetilenDepartmanId) {
-            System.out.println("HATA (IK-11): Yetkisiz departman! Bu görev (Departman ID: " +
-                    gorev.getHedefDepartmanId() + ") sizin departmanınıza ait değil.");
+            System.out.println("Uyari: Bu gorev (Departman ID: " +
+                    gorev.getHedefDepartmanId() + ") sizin departmaniniza ait degil.");
             return false;
         }
 
-        // IK-11: Yönetici görevi yalnızca departmanındaki aktif bir çalışana atayabilir.
+        // IK-11: Sadece kendi departmanindaki aktif calisana gorev atanabilir
         if (hedefCalisan.getDepartmanId() != this.yonetilenDepartmanId) {
-            System.out.println("HATA (IK-11): Atama reddedildi! Seçilen çalışan (" + hedefCalisan.getAd() +
-                    ") bu departmana ait değil.");
+            System.out.println("Uyari: Secilen calisan (" + hedefCalisan.getAd() +
+                    ") bu departmanda degil.");
             return false;
         }
         if (!hedefCalisan.isAktifMi()) {
-            System.out.println("HATA (IK-11): Atama reddedildi! Pasif durumdaki çalışana (" +
-                    hedefCalisan.getAd() + ") görev atanamaz.");
+            System.out.println("Uyari: Pasif durumdaki calisana (" +
+                    hedefCalisan.getAd() + ") gorev atanamaz.");
             return false;
         }
 
@@ -142,24 +142,24 @@ public class DepartmanYoneticisi extends Calisan {
             this.departman.getGorevler().add(gorev);
         }
 
-        System.out.println("BAŞARILI (IK-11): '" + gorev.getBaslik() + "' görevi " +
-                hedefCalisan.getAd() + " " + hedefCalisan.getSoyad() + " çalışanına atandı.");
+        System.out.println("Bilgi: Gorev atandi -> '" + gorev.getBaslik() + "' (" +
+                hedefCalisan.getAd() + " " + hedefCalisan.getSoyad() + ")");
         return true;
     }
 
     // Youssef AYOUBI - 230404906
     public boolean goreviInceleVeOnayla(Gorev gorev, boolean uygunMu, String aciklama) {
-        // IK-01: Oturum ve hesap aktiflik kontrolü
+        // IK-01: Aktif yonetici oturumu kontrolu
         if (!this.aktifMi || !this.oturumAcikMi) {
-            System.out.println("HATA (IK-01): Görev incelemek için aktif yönetici oturumu gereklidir.");
+            System.out.println("Uyari: Gorev incelemek icin aktif yonetici oturumu gerekir.");
             return false;
         }
         if (gorev == null) {
-            System.out.println("HATA: İncelenecek görev bulunamadı.");
+            System.out.println("Uyari: Incelenecek gorev bulunamadi.");
             return false;
         }
 
-        // IK-12: İnceleme sorumlusu uygun bulursa TAMAMLANDI yapar, değilse gerekçeli düzeltme ister.
+        // IK-12: uygunsa TAMAMLANDI yapar, degilse gerekceli duzeltme ister
         if (uygunMu) {
             return gorev.tamamlandiOnayla(this.kullaniciId, aciklama);
         } else {
@@ -169,16 +169,16 @@ public class DepartmanYoneticisi extends Calisan {
 
     // Youssef AYOUBI - 230404906
     public List<DevamKaydi> departmanRaporuGetir(LocalDate baslangic, LocalDate bitis) {
-        // IK-01: Oturum kontrolü
+        // IK-01: Oturum kontrolu
         if (!this.aktifMi || !this.oturumAcikMi) {
-            System.out.println("HATA (IK-01): Departman raporunu görüntülemek için oturum açılmalıdır.");
+            System.out.println("Uyari: Departman raporunu gormek icin oturum acilmalidir.");
             return new ArrayList<>();
         }
 
-        // IK-02: Departman yöneticisi yalnızca kendi departmanındaki çalışanların kayıtlarını görebilir.
+        // IK-02: Departman yoneticisi sadece kendi departmaninin kayitlarini gorebilir
         List<DevamKaydi> sonuc = new ArrayList<>();
         if (this.departman == null) {
-            System.out.println("UYARI (IK-02): Yöneticiye bağlı departman kaydı bulunamadı.");
+            System.out.println("Bilgi: Yoneticiye bagli departman kaydi bulunamadi.");
             return sonuc;
         }
 
@@ -193,8 +193,8 @@ public class DepartmanYoneticisi extends Calisan {
             }
         }
 
-        System.out.println("BAŞARILI (IK-02): " + this.departman.getDepartmanAdi() +
-                " departmanı için " + sonuc.size() + " adet devam kaydı listelendi.");
+        System.out.println("Bilgi: " + this.departman.getDepartmanAdi() +
+                " departmani icin " + sonuc.size() + " kayit listelendi.");
         return sonuc;
     }
 }
