@@ -5,18 +5,23 @@
 // - Mohamad BIRAHJAKLI - 230404939 (devamDuzeltmeTalebiOlustur, kendiRaporunuGoruntule)
 package models;
 
+import enums.BildirimTuru;
 import enums.DuzeltmeTuru;
 import enums.GorevDurumu;
+import enums.IzinDurumu;
 import enums.IzinTuru;
 import enums.Rol;
 import services.KonumServisi;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Calisan extends Kullanici {
+    // Adnan Derviş 230404935
+    private static int izinIdSayaci = 1;
     protected int departmanId;
     protected Departman departman;
     protected String unvan;
@@ -243,22 +248,121 @@ public class Calisan extends Kullanici {
         return false;
     }
 
-    // Adnan Derviş - 230404935
+    // Adnan Derviş 230404935
     public IzinTalebi izinTalebiOlustur(LocalDate baslangic, LocalDate bitis, IzinTuru tur, String aciklama) {
-        // TODO: Implement business logic
-        return null;
+        int hedefYoneticiId = (this.departman != null) ? this.departman.getYoneticiId() : 0;
+        return izinTalebiOlustur(baslangic, bitis, tur, aciklama, hedefYoneticiId);
     }
 
-    // Adnan Derviş - 230404935
+    // Adnan Derviş 230404935
+    public IzinTalebi izinTalebiOlustur(int calisanId, LocalDate baslangicTarihi, LocalDate bitisTarihi, IzinTuru izinTuru) {
+        if (calisanId != this.kullaniciId) {
+            System.out.println("Yetkisiz İşlem: Başka bir çalışan adına izin talebi oluşturamazsınız!");
+            return null;
+        }
+        int hedefYoneticiId = (this.departman != null) ? this.departman.getYoneticiId() : 0;
+        return izinTalebiOlustur(baslangicTarihi, bitisTarihi, izinTuru, "", hedefYoneticiId);
+    }
+
+    // Adnan Derviş 230404935
+    public IzinTalebi izinTalebiOlustur(LocalDate baslangicTarihi, LocalDate bitisTarihi, IzinTuru izinTuru,
+                                        String aciklama, int hedefYoneticiId) {
+        // IK-08: Geçersiz tarih aralığı veya çakışan aktif izin talebi kontrolü
+        if (baslangicTarihi == null || bitisTarihi == null || bitisTarihi.isBefore(baslangicTarihi)
+                || izinCakismasiVarMi(baslangicTarihi, bitisTarihi)) {
+            System.out.println("Talep Reddedildi: Geçersiz veya çakışan tarih aralığı! (IK-08)");
+            return null;
+        }
+
+        if (this.izinTalepleri == null) {
+            this.izinTalepleri = new ArrayList<>();
+        }
+
+        // IK-04: Oluşturma zamanı Europe/Istanbul sunucu saatine göre alınır.
+        LocalDateTime olusturmaZamani = ZonedDateTime.now(ZoneId.of("Europe/Istanbul")).toLocalDateTime();
+
+        IzinTalebi yeniTalep = new IzinTalebi(
+                izinIdSayaci++,
+                this.kullaniciId,
+                baslangicTarihi,
+                bitisTarihi,
+                izinTuru,
+                aciklama,
+                IzinDurumu.BEKLIYOR,
+                0,
+                null,
+                olusturmaZamani,
+                null
+        );
+
+        long gunSayisi = yeniTalep.gunSayisiHesapla();
+        this.izinTalepleri.add(yeniTalep);
+
+        Bildirim.bildirimGonder(
+                hedefYoneticiId,
+                "Yeni İzin Talebi",
+                this.ad + " " + this.soyad + " tarafından " + baslangicTarihi + " - " + bitisTarihi +
+                        " tarihleri arası (" + gunSayisi + " gün, " + izinTuru + ") izin talebi oluşturuldu.",
+                BildirimTuru.IZIN_KARARI,
+                yeniTalep.getIzinId()
+        );
+
+        System.out.println("BAŞARILI (IK-08): İzin talebi oluşturuldu (ID: " + yeniTalep.getIzinId() +
+                ", Süre: " + gunSayisi + " gün, Durum: " + yeniTalep.getDurum() + ").");
+        return yeniTalep;
+    }
+
+    // Adnan Derviş 230404935
     public boolean izinCakismasiVarMi(LocalDate baslangic, LocalDate bitis) {
-        // TODO: Implement business logic
+        // IK-08: BEKLIYOR veya ONAYLANDI durumundaki mevcut taleplerle tarih çakışması kontrol edilir.
+        if (baslangic == null || bitis == null || this.izinTalepleri == null) {
+            return false;
+        }
+
+        for (IzinTalebi mevcut : this.izinTalepleri) {
+            if (mevcut == null || mevcut.getBaslangicTarihi() == null || mevcut.getBitisTarihi() == null) {
+                continue;
+            }
+            if (mevcut.getDurum() == IzinDurumu.BEKLIYOR || mevcut.getDurum() == IzinDurumu.ONAYLANDI) {
+                boolean cakismaVar = !(bitis.isBefore(mevcut.getBaslangicTarihi())
+                        || baslangic.isAfter(mevcut.getBitisTarihi()));
+                if (cakismaVar) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
-    // Adnan Derviş - 230404935
+    // Adnan Derviş 230404935
     public boolean izinTalebiIptalEt(int izinId) {
-        // TODO: Implement business logic
+        if (this.izinTalepleri == null) {
+            System.out.println("Hata: İzin talebi (ID: " + izinId + ") bulunamadı!");
+            return false;
+        }
+        for (IzinTalebi talep : this.izinTalepleri) {
+            if (talep != null && talep.getIzinId() == izinId) {
+                return izinTalebiIptalEt(talep);
+            }
+        }
+        System.out.println("Hata: İzin talebi (ID: " + izinId + ") bulunamadı!");
         return false;
+    }
+
+    // Adnan Derviş 230404935
+    public boolean izinTalebiIptalEt(IzinTalebi talep) {
+        // IK-10: Bekleyen izin doğrudan iptal edilebilir; onaylı izin için yönetici/admin onayı gerekir.
+        if (talep == null) {
+            System.out.println("Hata: İptal edilecek izin talebi bulunamadı! (IK-10)");
+            return false;
+        }
+        if (talep.getDurum() == IzinDurumu.BEKLIYOR) {
+            return talep.iptalEt(this.kullaniciId, false);
+        }
+        if (talep.getDurum() == IzinDurumu.ONAYLANDI) {
+            return talep.iptalEt(this.kullaniciId, false);
+        }
+        return talep.iptalEt(this.kullaniciId, false);
     }
 
     // Youssef AYOUBI - 230404906

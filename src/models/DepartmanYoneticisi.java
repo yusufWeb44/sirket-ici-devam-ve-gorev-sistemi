@@ -3,9 +3,12 @@
 // - Adnan Derviş - 230404935 (izinTalebiDegerlendir)
 package models;
 
+import enums.IzinDurumu;
 import enums.Rol;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,10 +37,70 @@ public class DepartmanYoneticisi extends Calisan {
         this.yonetilenDepartmanId = yonetilenDepartmanId;
     }
 
-    // Adnan Derviş - 230404935
-    public boolean izinTalebiDegerlendir(IzinTalebi talep, boolean onay, String gerekce) {
-        // TODO: Implement business logic
-        return false;
+    // Adnan Derviş 230404935
+    public boolean izinTalebiDegerlendir(IzinTalebi talep, boolean onaylandiMi, String retGerekcesi) {
+        if (talep == null) {
+            System.out.println("Hata: Değerlendirilecek izin talebi bulunamadı!");
+            return false;
+        }
+
+        // IK-09: Departman yöneticisi kendi izin talebini onaylayamaz veya değerlendiremez.
+        if (talep.getCalisanId() == this.kullaniciId) {
+            System.out.println("Yetkisiz İşlem: Kendi izin talebinizi onaylayamazsınız! (IK-09) - Talep Sistem Yöneticisine yönlendirilmelidir.");
+            return false;
+        }
+
+        // Departman ve çalışan listesi tanımlıysa, talebin bu yöneticinin departmanındaki çalışana ait olduğunu doğrula
+        if (this.departman != null && this.departman.getCalisanlar() != null && !this.departman.getCalisanlar().isEmpty()) {
+            boolean departmanCalisaniMi = false;
+            for (Calisan c : this.departman.getCalisanlar()) {
+                if (c != null && c.getKullaniciId() == talep.getCalisanId()) {
+                    departmanCalisaniMi = true;
+                    break;
+                }
+            }
+            if (!departmanCalisaniMi) {
+                System.out.println("Yetkisiz İşlem: Bu izin talebi sizin yönettiğiniz departmana ait bir çalışana ait değil! (IK-02)");
+                return false;
+            }
+        }
+
+        // IK-10: Yalnızca BEKLIYOR durumundaki talepler değerlendirilebilir.
+        if (talep.getDurum() != IzinDurumu.BEKLIYOR) {
+            System.out.println("Hata: Yalnızca BEKLIYOR durumundaki izin talepleri değerlendirilebilir! Mevcut durum: "
+                    + talep.getDurum() + " (IK-10)");
+            return false;
+        }
+
+        // IK-04: Sunucu zamanı Europe/Istanbul olarak alınır.
+        ZonedDateTime degerlendirmeZamani = ZonedDateTime.now(ZoneId.of("Europe/Istanbul"));
+
+        if (onaylandiMi) {
+            talep.onayla(this.kullaniciId);
+            if (talep.getDurum() == IzinDurumu.ONAYLANDI) {
+                System.out.println("BAŞARILI (IK-09): İzin talebi (ID: " + talep.getIzinId() +
+                        ") departman yöneticisi tarafından onaylandı (" + degerlendirmeZamani.toLocalDateTime() + ").");
+                return true;
+            }
+            return false;
+        } else {
+            // IK-09: Ret işlemi için gerekçe zorunludur.
+            if (retGerekcesi == null || retGerekcesi.trim().isEmpty()) {
+                System.out.println("Hata: Ret için gerekçe belirtilmesi zorunludur! (IK-09)");
+                return false;
+            }
+            return talep.reddet(this.kullaniciId, retGerekcesi);
+        }
+    }
+
+    // Adnan Derviş 230404935
+    public boolean izinTalebiOnayla(IzinTalebi talep) {
+        return izinTalebiDegerlendir(talep, true, null);
+    }
+
+    // Adnan Derviş 230404935
+    public boolean izinTalebiReddet(IzinTalebi talep, String retGerekcesi) {
+        return izinTalebiDegerlendir(talep, false, retGerekcesi);
     }
 
     // Youssef AYOUBI - 230404906

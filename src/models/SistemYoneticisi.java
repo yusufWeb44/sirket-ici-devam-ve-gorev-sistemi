@@ -4,10 +4,13 @@
 // - Adnan Derviş - 230404935 (yoneticiIzinTalebiDegerlendir)
 package models;
 
+import enums.BildirimTuru;
+import enums.IzinDurumu;
 import enums.Rol;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 public class SistemYoneticisi extends Kullanici {
     private String yetkiSeviyesi;
@@ -150,9 +153,79 @@ public class SistemYoneticisi extends Kullanici {
         return false;
     }
 
-    // Adnan Derviş - 230404935
-    public boolean yoneticiIzinTalebiDegerlendir(IzinTalebi talep, boolean onay, String gerekce) {
-        // TODO: Implement business logic
+    // Adnan Derviş 230404935
+    public boolean yoneticiIzinTalebiDegerlendir(IzinTalebi talep, boolean onaylandiMi, String retGerekcesi) {
+        if (talep == null) {
+            System.out.println("Hata: Değerlendirilecek izin talebi bulunamadı!");
+            return false;
+        }
+
+        // IK-09: Kendi izin talebini değerlendirme engeli
+        if (talep.getCalisanId() == this.kullaniciId) {
+            System.out.println("Yetkisiz İşlem: Kendi izin talebinizi onaylayamazsınız! (IK-09)");
+            return false;
+        }
+
+        // IK-10: Yalnızca BEKLIYOR durumundaki talepler değerlendirilebilir.
+        if (talep.getDurum() != IzinDurumu.BEKLIYOR) {
+            System.out.println("Hata: Yalnızca BEKLIYOR durumundaki izin talepleri değerlendirilebilir! Mevcut durum: "
+                    + talep.getDurum() + " (IK-10)");
+            return false;
+        }
+
+        // IK-04: Sunucu zamanı Europe/Istanbul olarak alınır.
+        ZonedDateTime kararZamani = ZonedDateTime.now(ZoneId.of("Europe/Istanbul"));
+
+        // IK-09: Sistem yöneticisi departman yöneticisinin yönlendirilen izin talebini onaylar veya gerekçeli reddeder.
+        if (onaylandiMi) {
+            talep.onayla(this.kullaniciId);
+            if (talep.getDurum() == IzinDurumu.ONAYLANDI) {
+                System.out.println("BAŞARILI (IK-09): Yönetici izin talebi (ID: " + talep.getIzinId() +
+                        ") Sistem Yöneticisi tarafından onaylandı (" + kararZamani.toLocalDateTime() + ").");
+                return true;
+            }
+            return false;
+        } else {
+            if (retGerekcesi == null || retGerekcesi.trim().isEmpty()) {
+                System.out.println("Hata: Ret için gerekçe belirtilmesi zorunludur! (IK-09)");
+                return false;
+            }
+            return talep.reddet(this.kullaniciId, retGerekcesi);
+        }
+    }
+
+    // Adnan Derviş 230404935
+    public boolean onayliIzinIptalOnayla(IzinTalebi talep, String iptalGerekcesi) {
+        if (talep == null) {
+            System.out.println("Hata: İptal onayı verilecek izin talebi bulunamadı! (IK-10)");
+            return false;
+        }
+
+        // IK-10: Yalnızca ONAYLANDI durumundaki izin talepleri için resmi iptal onayı verilebilir.
+        if (talep.getDurum() != IzinDurumu.ONAYLANDI) {
+            System.out.println("Hata: Yalnızca ONAYLANDI durumundaki izin talepleri için yönetici iptal onayı verilebilir! Mevcut durum: "
+                    + talep.getDurum() + " (IK-10)");
+            return false;
+        }
+
+        boolean iptalBasarili = talep.iptalEt(this.kullaniciId, true);
+        if (iptalBasarili) {
+            // IK-04: İşlem zamanı Europe/Istanbul sunucu saatine göre alınır.
+            ZonedDateTime islemZamani = ZonedDateTime.now(ZoneId.of("Europe/Istanbul"));
+            String gerekceMetni = (iptalGerekcesi != null && !iptalGerekcesi.trim().isEmpty())
+                    ? iptalGerekcesi.trim()
+                    : "Sistem yöneticisi onayı ile iptal edildi";
+
+            Bildirim.bildirimGonder(
+                    talep.getCalisanId(),
+                    "İzin İptal Onayı",
+                    "Onaylanmış izin talebiniz (ID: " + talep.getIzinId() + ") Sistem Yöneticisi tarafından iptal edildi. Gerekçe: "
+                            + gerekceMetni + " (" + islemZamani.toLocalDateTime() + ")",
+                    BildirimTuru.IZIN_KARARI,
+                    talep.getIzinId()
+            );
+            return true;
+        }
         return false;
     }
 }
